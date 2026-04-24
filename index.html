@@ -1,0 +1,4181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽真空灌注段三维可视化系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Background - 增强对比度 */
+            --bg-void: #0a0f1a;
+            --bg-deep: #0d1424;
+            --bg-dark: #111827;
+            --bg-panel: rgba(17, 24, 39, 0.85);
+            --bg-card: rgba(31, 41, 55, 0.7);
+            --bg-card-hover: rgba(55, 65, 81, 0.85);
+            
+            /* Primary Colors - 提高饱和度 */
+            --cyan-glow: #22d3ee;
+            --cyan-dim: #06b6d4;
+            --cyan-deep: #0891b2;
+            --cyan-soft: rgba(34, 211, 238, 0.15);
+            --cyan-faint: rgba(34, 211, 238, 0.05);
+            
+            /* Accent Colors - 更鲜明的色彩 */
+            --purple-glow: #a78bfa;
+            --purple-soft: rgba(167, 139, 250, 0.15);
+            --blue-glow: #60a5fa;
+            --orange-glow: #fb923c;
+            --green-glow: #4ade80;
+            --green-soft: rgba(74, 222, 128, 0.2);
+            --red-glow: #f87171;
+            --yellow-glow: #facc15;
+            
+            /* Text - 提高可读性 */
+            --text-primary: #f9fafb;
+            --text-secondary: #e5e7eb;
+            --text-tertiary: #9ca3af;
+            --text-muted: #6b7280;
+            --text-bright: #f0f9ff;
+            --text-normal: #94a3b8;
+            --text-dim: #475569;
+            
+            /* Borders - 更清晰的边界 */
+            --border-glow: rgba(34, 211, 238, 0.4);
+            --border-subtle: rgba(34, 211, 238, 0.15);
+            --border-default: rgba(75, 85, 99, 0.5);
+            
+            /* Effects */
+            --glass-blur: 16px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-glow: 0 0 20px rgba(34, 211, 238, 0.15);
+            
+            /* Spacing Scale */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            
+            /* Border Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-void);
+            color: var(--text-primary);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .system-container {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-rows: 72px 1fr;
+            position: relative;
+            background:
+                radial-gradient(ellipse at 20% 0%, rgba(34, 211, 238, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+                var(--bg-void);
+        }
+
+        .holographic-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .holographic-grid::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 50%, transparent 0%, var(--bg-void) 70%);
+        }
+
+        .system-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(0, 212, 255, 0.008) 2px,
+                rgba(0, 212, 255, 0.008) 4px
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Header Bar - 优化视觉层次 */
+        .header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 var(--space-6);
+            height: 72px;
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(17, 24, 39, 0.85) 100%);
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            z-index: 50;
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* 顶部发光线条 */
+        .header-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(34, 211, 238, 0.4) 15%,
+                rgba(34, 211, 238, 0.9) 50%,
+                rgba(34, 211, 238, 0.4) 85%,
+                transparent 100%
+            );
+        }
+        
+        /* 标题容器 */
+        .header-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-5);
+            position: relative;
+        }
+        
+        /* 标题两侧装饰 */
+        .header-title-wrapper::before,
+        .header-title-wrapper::after {
+            content: '';
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan-glow));
+        }
+        
+        .header-title-wrapper::after {
+            background: linear-gradient(90deg, var(--cyan-glow), transparent);
+        }
+        
+        .brand-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: var(--text-primary);
+            text-shadow: 0 0 30px rgba(34, 211, 238, 0.5), 0 0 60px rgba(34, 211, 238, 0.2);
+            white-space: nowrap;
+            background: linear-gradient(180deg, #ffffff 0%, var(--cyan-glow) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* 右侧时间和状态 */
+        .header-right {
+            position: absolute;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        /* 左侧状态 */
+        .header-left {
+            position: absolute;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--cyan-glow), var(--blue-glow));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 14px;
+            color: var(--bg-void);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        .status-orb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            position: relative;
+            transition: all 0.4s ease;
+        }
+        .status-orb::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 1px solid currentColor;
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+        .status-orb.active {
+            background: var(--green-glow);
+            box-shadow: 0 0 15px var(--green-glow);
+        }
+        .status-orb.active::after {
+            border-color: var(--green-glow);
+            animation: orb-ring 1.5s ease-out infinite;
+        }
+        .status-orb.warning {
+            background: var(--yellow-glow);
+            box-shadow: 0 0 15px var(--yellow-glow);
+        }
+        .status-orb.warning::after {
+            border-color: var(--yellow-glow);
+            animation: orb-ring 1s ease-out infinite;
+        }
+        .status-orb.error {
+            background: var(--red-glow);
+            box-shadow: 0 0 15px var(--red-glow);
+            animation: error-pulse 0.6s ease-in-out infinite;
+        }
+        @keyframes orb-ring {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        @keyframes error-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .time-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--cyan-glow);
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--cyan-glow), 0 0 20px rgba(0, 212, 255, 0.4);
+            background: rgba(0, 212, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .alarm-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--red-glow);
+            animation: alarm-breathe 2.5s ease-in-out infinite;
+        }
+        @keyframes alarm-breathe {
+            0%, 100% { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); }
+            50% { border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.15); }
+        }
+        .alarm-badge svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--red-glow);
+            animation: alarm-icon 1.2s ease-in-out infinite;
+        }
+        @keyframes alarm-icon {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: minmax(260px, 18%) 1fr minmax(260px, 18%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Side Panels - 优化视觉层次 */
+        .side-panel {
+            background: linear-gradient(var(--side-direction, 90deg), var(--bg-panel) 0%, rgba(17, 24, 39, 0.4) 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: visible;
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            z-index: 10;
+            padding: var(--space-3);
+            gap: var(--space-3);
+        }
+        .side-panel.left { --side-direction: 90deg; border-right: 1px solid var(--border-subtle); }
+        .side-panel.right { --side-direction: 270deg; border-left: 1px solid var(--border-subtle); }
+        .side-panel::before {
+            content: '';
+            position: absolute;
+            top: 5%;
+            bottom: 5%;
+            width: 1px;
+            background: linear-gradient(180deg, transparent, var(--cyan-glow), transparent);
+            opacity: 0.4;
+        }
+        .side-panel.left::before { right: 0; }
+        .side-panel.right::before { left: 0; }
+
+        .panel-block {
+            padding: var(--space-3);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .panel-block:hover {
+            border-color: var(--border-glow);
+            background: var(--bg-card-hover);
+        }
+        .panel-block:last-child { border-bottom: 1px solid var(--border-subtle); }
+
+        .block-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--cyan-glow);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding-bottom: var(--space-2);
+            border-bottom: 1px solid var(--cyan-faint);
+            flex-shrink: 0;
+        }
+        .block-header::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--cyan-glow);
+            box-shadow: 0 0 10px var(--cyan-glow), 0 0 20px var(--cyan-glow);
+            border-radius: 50%;
+            animation: dot-pulse 2s ease-in-out infinite;
+        }
+        @keyframes dot-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.6; }
+        }
+
+        /* Device List - 优化间距和视觉 */
+        .device-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+        }
+        .device-status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+        }
+        .status-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(31, 41, 55, 0.5);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-default);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-dot.normal {
+            background: #4ade80;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+        }
+        .status-dot.warning {
+            background: #facc15;
+            box-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
+        }
+        .status-dot.paused {
+            background: #facc15;
+            box-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
+        }
+        .status-dot.fault {
+            background: #f87171;
+            box-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
+        }
+        .status-dot.stopped {
+            background: #94a3b8;
+            box-shadow: 0 0 8px rgba(148, 163, 184, 0.6);
+        }
+        .status-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            flex-grow: 1;
+        }
+        .status-count {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .device-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: rgba(31, 41, 55, 0.5);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-default);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .device-row:hover {
+            border-color: var(--border-glow);
+            background: rgba(55, 65, 81, 0.6);
+            transform: translateX(2px);
+        }
+        .device-row.valve-row {
+            grid-column: span 2;
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.08) 0%, rgba(8, 145, 178, 0.05) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.4);
+            padding: var(--space-2) var(--space-4);
+        }
+        .device-row.valve-row:hover {
+            border-color: rgba(34, 211, 238, 0.7);
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.12) 0%, rgba(8, 145, 178, 0.08) 100%);
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+        }
+        .device-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70px;
+        }
+        .device-row.valve-row .device-label {
+            color: var(--cyan-glow);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .device-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        .meta-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .meta-dot.on {
+            background: var(--green-glow);
+            box-shadow: 0 0 10px var(--green-glow), 0 0 20px rgba(74, 222, 128, 0.4);
+        }
+        .meta-dot.off { 
+            background: var(--red-glow); 
+            box-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+        }
+        .meta-dot.idle { background: var(--text-muted); }
+        .meta-dot.fault {
+            background: #f87171;
+            box-shadow: 0 0 10px #f87171, 0 0 20px rgba(248, 113, 113, 0.5);
+        }
+        .meta-dot.warning {
+            background: #facc15;
+            box-shadow: 0 0 10px #facc15, 0 0 20px rgba(250, 204, 21, 0.5);
+        }
+        .device-row.valve-row .meta-dot.on {
+            background: var(--green-glow);
+            box-shadow: 0 0 12px var(--green-glow), 0 0 20px rgba(74, 222, 128, 0.5);
+        }
+        .meta-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .device-row.valve-row .meta-text {
+            color: var(--cyan-glow);
+            font-weight: 600;
+        }
+
+        /* Data Cards - 优化视觉层次 */
+        .data-matrix {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-3);
+        }
+        .metric-card {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.6) 100%);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
+            border: 1px solid var(--border-default);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color, var(--cyan-glow)), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .metric-card:hover::before { opacity: 1; }
+        .metric-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-3px);
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.9) 0%, rgba(31, 41, 55, 0.7) 100%);
+            box-shadow: var(--shadow-glow);
+        }
+        .metric-label {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: var(--space-2);
+            font-weight: 600;
+        }
+        .metric-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        .metric-value .unit {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: 4px;
+            font-weight: 500;
+        }
+        .metric-value.vacuum { color: var(--cyan-glow); text-shadow: 0 0 15px rgba(34, 211, 238, 0.6); }
+        .metric-value.flow { color: var(--green-glow); text-shadow: 0 0 15px rgba(74, 222, 128, 0.6); }
+        .metric-value.temp { color: var(--orange-glow); text-shadow: 0 0 15px rgba(251, 146, 60, 0.6); }
+        .metric-value.pressure { color: var(--purple-glow); text-shadow: 0 0 15px rgba(167, 139, 250, 0.6); }
+
+        /* Alarm Log - 优化视觉 */
+        .alarm-log {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            flex: 1;
+            overflow-y: auto;
+        }
+        .alarm-entry {
+            padding: var(--space-2) var(--space-3);
+            border-left: 3px solid var(--red-glow);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            animation: alarm-enter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
+        }
+        .alarm-entry.error {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.1), rgba(248, 113, 113, 0.03));
+        }
+        .alarm-entry.warning {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.03));
+            border-left-color: var(--yellow-glow);
+        }
+        .alarm-entry.info {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.03));
+            border-left-color: var(--green-glow);
+        }
+        .alarm-entry:hover {
+            transform: translateX(3px);
+        }
+        .alarm-entry.error:hover {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.05));
+        }
+        .alarm-entry.warning:hover {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 15), rgba(251, 191, 36, 0.05));
+        }
+        .alarm-entry.info:hover {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+        }
+        @keyframes alarm-enter {
+            from { opacity: 0; transform: translateX(-15px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .alarm-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-1);
+            font-weight: 500;
+        }
+        .alarm-desc {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .alarm-entry.error .alarm-desc {
+            color: var(--red-glow);
+        }
+        .alarm-entry.warning .alarm-desc {
+            color: var(--yellow-glow);
+        }
+        .alarm-entry.info .alarm-desc {
+            color: var(--green-glow);
+        }
+
+        /* 工艺参数 - 优化进度条样式 */
+        .param-stack {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        .param-item {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.6) 0%, rgba(17, 24, 39, 0.4) 100%);
+            border-radius: var(--radius-md);
+            padding: var(--space-2) var(--space-3);
+            border: 1px solid var(--border-default);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .param-item:hover {
+            border-color: var(--border-glow);
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.7) 0%, rgba(31, 41, 55, 0.5) 100%);
+            transform: translateX(3px);
+        }
+        .param-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-2);
+        }
+        .param-name {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+        .param-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .param-value.vacuum { color: var(--cyan-glow); text-shadow: 0 0 10px rgba(34, 211, 238, 0.4); }
+        .param-value.flow { color: var(--green-glow); text-shadow: 0 0 10px rgba(74, 222, 128, 0.4); }
+        .param-value.temp { color: var(--orange-glow); text-shadow: 0 0 10px rgba(251, 146, 60, 0.4); }
+        .param-value.pressure { color: var(--purple-glow); text-shadow: 0 0 10px rgba(167, 139, 250, 0.4); }
+        .param-unit {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: 4px;
+            font-weight: 500;
+        }
+        .param-bar {
+            width: 100%;
+        }
+        .param-track {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+        .param-track::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 3px;
+        }
+        .param-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .param-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: progress-shine 2s ease-in-out infinite;
+        }
+        @keyframes progress-shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .param-fill.vacuum { 
+            background: linear-gradient(90deg, var(--cyan-deep), var(--cyan-glow));
+            box-shadow: 0 0 12px rgba(34, 211, 238, 0.5);
+        }
+        .param-fill.flow { 
+            background: linear-gradient(90deg, #15803d, var(--green-glow));
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+        }
+        .param-fill.temp { 
+            background: linear-gradient(90deg, #c2410c, var(--orange-glow));
+            box-shadow: 0 0 12px rgba(251, 146, 60, 0.5);
+        }
+        .param-fill.pressure { 
+            background: linear-gradient(90deg, #7c3aed, var(--purple-glow));
+            box-shadow: 0 0 12px rgba(167, 139, 250, 0.5);
+        }
+
+        /* Control Buttons - 优化按钮样式 */
+        .control-cluster {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+        }
+        .ctrl-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-1);
+            padding: var(--space-2) var(--space-2);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.6) 100%);
+            color: var(--text-secondary);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            min-height: 36px;
+        }
+        .ctrl-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.25), transparent);
+            transform: translate(-50%, -50%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+        }
+        .ctrl-btn:hover::before { width: 250px; height: 250px; }
+        .ctrl-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-glow);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-md);
+        }
+        .ctrl-btn:active { 
+            transform: scale(0.97) translateY(0);
+            transition: transform 0.1s ease;
+        }
+        .ctrl-btn.on { z-index: 1; }
+        
+        /* 按钮状态样式 */
+        .ctrl-btn.start {
+            border-color: rgba(74, 222, 128, 0.3);
+        }
+        .ctrl-btn.start:hover, .ctrl-btn.start.on {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.15) 0%, rgba(21, 128, 61, 0.1) 100%);
+            border-color: var(--green-glow);
+            color: var(--green-glow);
+            box-shadow: 0 0 25px rgba(74, 222, 128, 0.35), inset 0 0 25px rgba(74, 222, 128, 0.1);
+        }
+        .ctrl-btn.pause {
+            border-color: rgba(250, 204, 21, 0.3);
+        }
+        .ctrl-btn.pause:hover, .ctrl-btn.pause.on {
+            background: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(161, 98, 7, 0.1) 100%);
+            border-color: var(--yellow-glow);
+            color: var(--yellow-glow);
+            box-shadow: 0 0 25px rgba(250, 204, 21, 0.35), inset 0 0 25px rgba(250, 204, 21, 0.1);
+        }
+        .ctrl-btn.stop {
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+        .ctrl-btn.stop:hover, .ctrl-btn.stop.on {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.15) 0%, rgba(185, 28, 28, 0.1) 100%);
+            border-color: var(--red-glow);
+            color: var(--red-glow);
+            box-shadow: 0 0 25px rgba(248, 113, 113, 0.35), inset 0 0 25px rgba(248, 113, 113, 0.1);
+        }
+        .ctrl-btn.vacuum {
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+        .ctrl-btn.vacuum:hover, .ctrl-btn.vacuum.on {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.15) 0%, rgba(8, 145, 178, 0.1) 100%);
+            border-color: var(--cyan-glow);
+            color: var(--cyan-glow);
+            box-shadow: 0 0 25px rgba(34, 211, 238, 0.35), inset 0 0 25px rgba(34, 211, 238, 0.1);
+        }
+        .ctrl-btn.reset {
+            border-color: rgba(156, 163, 175, 0.3);
+        }
+        .ctrl-btn.reset:hover {
+            background: linear-gradient(135deg, rgba(156, 163, 175, 0.15) 0%, rgba(75, 85, 99, 0.1) 100%);
+            border-color: var(--text-tertiary);
+            color: var(--text-tertiary);
+            box-shadow: 0 0 20px rgba(156, 163, 175, 0.25);
+        }
+        .btn-icon { 
+            font-size: 14px; 
+            z-index: 1;
+            transition: transform 0.2s ease;
+        }
+        .ctrl-btn:hover .btn-icon {
+            transform: scale(1.1);
+        }
+        .btn-label { z-index: 1; }
+
+        /* Progress Section - 优化进度面板 - 调整布局确保完整显示 */
+        .progress-panel {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.6) 100%);
+            border-radius: var(--radius-lg);
+            padding: var(--space-3);
+            border: 1px solid var(--border-default);
+            transition: all 0.3s ease;
+            min-height: auto;
+        }
+        .progress-panel:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-glow);
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2);
+        }
+        .progress-phase {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--cyan-glow);
+            text-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
+            letter-spacing: 1px;
+        }
+        .progress-timer {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--purple-glow);
+            font-weight: 600;
+            background: rgba(167, 139, 250, 0.1);
+            padding: 3px 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+        }
+        .progress-track {
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: var(--space-2);
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+        .progress-track::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 4px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan-glow), var(--purple-glow), var(--green-glow));
+            background-size: 200% 100%;
+            border-radius: 4px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            animation: progress-flow 2.5s linear infinite;
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+        }
+        @keyframes progress-flow {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+            animation: shine 1.8s ease-in-out infinite;
+        }
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .progress-percent {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            text-align: center;
+            background: linear-gradient(90deg, var(--cyan-glow), var(--green-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+            filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.3));
+            line-height: 1.2;
+        }
+        .progress-percent span {
+            font-size: 13px;
+            -webkit-text-fill-color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Equipment Panel - 产线设备 - 表格形式 */
+        .equipment-panel {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.6) 100%);
+            border-radius: var(--radius-lg);
+            padding: var(--space-2);
+            border: 1px solid var(--border-default);
+            transition: all 0.3s ease;
+        }
+        .equipment-panel:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-glow);
+        }
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: var(--space-2);
+        }
+        .equipment-table th {
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 6px 4px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .equipment-table td {
+            padding: 5px 4px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .equipment-table tr:last-child td {
+            border-bottom: none;
+        }
+        .equipment-table tr:hover td {
+            background: rgba(31, 41, 55, 0.3);
+        }
+        .equipment-summary {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-2);
+            padding-top: var(--space-2);
+            border-top: 1px solid var(--border-subtle);
+        }
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .summary-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+        }
+        .summary-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--cyan-glow);
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+        }
+        .summary-value.online {
+            color: var(--green-glow);
+            text-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+        }
+        .summary-value.offline {
+            color: var(--red-alert);
+            text-shadow: 0 0 10px rgba(248, 113, 113, 0.5);
+        }
+
+        /* 3D Viewport */
+        .viewport {
+            position: relative;
+            overflow: hidden;
+        }
+        .viewport::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 30% 30%, rgba(0, 212, 255, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 70%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        /* 设备状态统计栏 - 优化卡片样式 */
+        .device-stats-bar {
+            position: absolute;
+            top: var(--space-3);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-4);
+            z-index: 30;
+        }
+        
+        .device-stat-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.9) 0%, rgba(17, 24, 39, 0.8) 100%);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 180px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .device-stat-item:hover {
+            border-color: var(--border-glow);
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.95) 0%, rgba(31, 41, 55, 0.85) 100%);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-glow), var(--shadow-md);
+        }
+        
+        .device-stat-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            transition: all 0.3s ease;
+        }
+        
+        .device-stat-icon.running {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.2) 0%, rgba(21, 128, 61, 0.15) 100%);
+            color: var(--green-glow);
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
+        }
+        
+        .device-stat-icon.warning {
+            background: linear-gradient(135deg, rgba(250, 204, 21, 0.2) 0%, rgba(161, 98, 7, 0.15) 100%);
+            color: var(--yellow-glow);
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+        }
+        
+        .device-stat-icon.error {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.2) 0%, rgba(185, 28, 28, 0.15) 100%);
+            color: var(--red-glow);
+            box-shadow: 0 0 15px rgba(248, 113, 113, 0.3);
+        }
+        
+        .device-stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .device-stat-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .device-stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.5px;
+        }
+        
+        .viewport-hud {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            padding: 4px 10px;
+            background: rgba(10, 30, 60, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 12px;
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        .viewport-hud:hover {
+            opacity: 1;
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+        .viewport-hud svg {
+            width: 10px;
+            height: 10px;
+            fill: var(--cyan-glow);
+        }
+        .viewport-stats {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            display: flex;
+            gap: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            z-index: 30;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .stat-val {
+            color: var(--cyan-glow);
+        }
+
+
+
+        .model-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 40;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 2px solid rgba(0, 212, 255, 0.15);
+            border-top-color: var(--cyan-glow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 14px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--cyan-glow);
+            letter-spacing: 2px;
+        }
+
+        /* Scrollbar - 优化滚动条 */
+        ::-webkit-scrollbar { 
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track { 
+            background: rgba(17, 24, 39, 0.5);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--cyan-dim), var(--cyan-glow));
+            border-radius: 3px;
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+        ::-webkit-scrollbar-thumb:hover { 
+            background: linear-gradient(180deg, var(--cyan-glow), var(--purple-glow));
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+        }
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        /* 响应式布局 - 小屏幕优化 */
+        @media (max-width: 1400px) {
+            .main-content {
+                grid-template-columns: 240px 1fr 240px;
+            }
+            .panel-block {
+                padding: 12px 14px;
+            }
+            .metric-value {
+                font-size: 16px;
+            }
+            .gauge-svg-wrap {
+                width: 80px;
+                height: 50px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 220px 1fr 220px;
+            }
+            .brand-title {
+                font-size: 14px;
+                letter-spacing: 2px;
+            }
+            .time-display {
+                font-size: 18px;
+            }
+        }
+
+        /* Floating Particles - 优化粒子效果 */
+        .particle-field {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 5;
+        }
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--cyan-glow);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-up 10s ease-in-out infinite;
+            box-shadow: 0 0 6px var(--cyan-glow), 0 0 12px var(--cyan-glow);
+        }
+        .particle:nth-child(odd) { 
+            background: var(--purple-glow); 
+            box-shadow: 0 0 6px var(--purple-glow), 0 0 12px var(--purple-glow);
+        }
+        .particle:nth-child(3n) {
+            width: 2px;
+            height: 2px;
+            animation-duration: 14s;
+        }
+        @keyframes float-up {
+            0% { transform: translateY(100%) translateX(0) scale(0.5); opacity: 0; }
+            5% { opacity: 0.8; transform: scale(1); }
+            95% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) translateX(30px) scale(0.5); opacity: 0; }
+        }
+
+        /* 数据面板样式 - 科技感版 */
+        .data-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            box-shadow: 
+                0 0 20px rgba(34, 211, 238, 0.3),
+                0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            overflow: hidden;
+            font-family: 'Orbitron', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            animation: panelFadeIn 0.4s ease-out;
+            background-image: 
+                linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        @keyframes panelFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+                box-shadow: 0 0 0 rgba(34, 211, 238, 0);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 
+                    0 0 20px rgba(34, 211, 238, 0.3),
+                    0 8px 32px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.9) 0%, rgba(16, 185, 129, 0.9) 100%);
+            color: white;
+            cursor: pointer;
+            position: relative;
+            border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+            box-shadow: 0 2px 10px rgba(34, 211, 238, 0.3);
+        }
+
+        .panel-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+        }
+
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 12px;
+            box-shadow: 0 0 15px currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.8);
+                transform: scale(1);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+                transform: scale(1.1);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+                transform: scale(1);
+            }
+        }
+
+        .status-indicator.green {
+            background-color: #10b981;
+            color: #10b981;
+        }
+
+        .status-indicator.yellow {
+            background-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .status-indicator.red {
+            background-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .panel-title {
+            flex: 1;
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .panel-close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 5px;
+            transition: all 0.3s ease;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .panel-close:hover {
+            color: white;
+            transform: scale(1.1);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .panel-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .panel-row::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            right: -20px;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .panel-row:hover {
+            background-color: rgba(34, 211, 238, 0.1);
+            padding-left: 15px;
+            padding-right: 15px;
+            border-radius: 4px;
+        }
+
+        .panel-row:hover::before {
+            opacity: 1;
+        }
+
+        .panel-row:last-child {
+            border-bottom: none;
+        }
+
+        .panel-label {
+            font-weight: 500;
+            color: #94a3b8;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-value {
+            color: #22d3ee;
+            font-weight: 600;
+            font-size: 14px;
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+            letter-spacing: 0.5px;
+        }
+
+        .panel-alarm {
+            margin-top: 20px;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #f87171;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+            text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+        }
+
+        .panel-alarm:empty {
+            display: none;
+        }
+
+        /* SVG Filters */
+        .svg-filters {
+            position: absolute;
+            width: 0;
+            height: 0;
+        }
+
+        /* 浮动面板样式 */
+        #floatingPanels {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .floating-panel {
+            position: absolute;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.9) 0%, rgba(17, 24, 39, 0.8) 100%);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            cursor: pointer;
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+        }
+
+        .panel-header:hover {
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.9) 0%, rgba(31, 41, 55, 0.8) 100%);
+            border-color: var(--border-glow);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.green {
+            background-color: var(--green-glow);
+            box-shadow: 0 0 8px var(--green-glow);
+        }
+
+        .status-indicator.yellow {
+            background-color: var(--yellow-glow);
+            box-shadow: 0 0 8px var(--yellow-glow);
+        }
+
+        .status-indicator.red {
+            background-color: var(--red-glow);
+            box-shadow: 0 0 8px var(--red-glow);
+        }
+
+        .panel-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .panel-content {
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.9) 0%, rgba(17, 24, 39, 0.8) 100%);
+            border: 1px solid var(--border-default);
+            border-top: none;
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            min-width: 200px;
+        }
+
+        .panel-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .panel-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .panel-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .panel-value {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .panel-alarm {
+            font-size: 10px;
+            color: var(--red-glow);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-subtle);
+        }
+    </style>
+</head>
+<body>
+    <svg class="svg-filters">
+        <defs>
+            <filter id="glow-filter" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                <feMerge>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="system-container">
+        <div class="holographic-grid"></div>
+
+        <header class="header-bar">
+            <!-- 左侧：系统状态 -->
+            <div class="header-left">
+                <div class="status-badge">
+                    <div class="status-orb" id="systemOrb"></div>
+                    <span id="systemOrbText">系统待机</span>
+                </div>
+            </div>
+            
+            <!-- 中间：系统标题 -->
+            <div class="header-title-wrapper">
+                <div class="brand-title">抽真空灌注段监控系统</div>
+            </div>
+            
+            <!-- 右侧：时间和报警 -->
+            <div class="header-right">
+                <div class="time-display" id="clock">00:00:00</div>
+                <div class="alarm-badge">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l8 4v7.64l-8 4-8-4V8.18l8-4zm-1 5.82v6h2v-6h-2zm0 8v2h2v-2h-2z"/></svg>
+                    <span id="alarmCount">0</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <aside class="side-panel left">
+                <div class="panel-block">
+                    <div class="block-header">设备状态</div>
+                    <div class="device-status-grid">
+                        <div class="status-stat-item">
+                            <div class="status-dot normal" id="statusNormalDot"></div>
+                            <span class="status-label">正常</span>
+                            <span class="status-count" id="statusNormalCount">0</span>
+                        </div>
+                        <div class="status-stat-item">
+                            <div class="status-dot paused" id="statusPausedDot"></div>
+                            <span class="status-label">待机</span>
+                            <span class="status-count" id="statusPausedCount">0</span>
+                        </div>
+                        <div class="status-stat-item">
+                            <div class="status-dot fault" id="statusFaultDot"></div>
+                            <span class="status-label">故障</span>
+                            <span class="status-count" id="statusFaultCount">0</span>
+                        </div>
+                        <div class="status-stat-item">
+                            <div class="status-dot stopped" id="statusStoppedDot"></div>
+                            <span class="status-label">停机</span>
+                            <span class="status-count" id="statusStoppedCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block">
+                    <div class="block-header">实时数据</div>
+                    <div class="data-matrix">
+                        <div class="metric-card">
+                            <div class="metric-label">真空度</div>
+                            <div class="metric-value vacuum" id="vacuumVal">0<span class="unit">kPa</span></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">流量</div>
+                            <div class="metric-value flow" id="flowVal">0<span class="unit">L/min</span></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">温度</div>
+                            <div class="metric-value temp" id="tempVal">25<span class="unit">℃</span></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">压力</div>
+                            <div class="metric-value pressure" id="pressureVal">0<span class="unit">kPa</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" style="flex: 1; overflow: hidden;">
+                    <div class="block-header">报警记录</div>
+                    <div class="alarm-log" id="alarmLog"></div>
+                </div>
+            </aside>
+
+            <section class="viewport">
+                <div class="particle-field" id="particleField"></div>
+                <div class="model-loading" id="modelLoading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">模型加载中</div>
+                </div>
+                <!-- 设备状态统计栏 - 四个卡片等距排列 -->
+                <div class="device-stats-bar">
+                    <div class="device-stat-item">
+                        <div class="device-stat-icon running" id="statVacuumIcon">⚡</div>
+                        <div class="device-stat-info">
+                            <div class="device-stat-label">抽真空机</div>
+                            <div class="device-stat-value" id="statVacuum">运行中</div>
+                        </div>
+                    </div>
+                    <div class="device-stat-item">
+                        <div class="device-stat-icon running" id="statPumpIcon">💧</div>
+                        <div class="device-stat-info">
+                            <div class="device-stat-label">灌注机</div>
+                            <div class="device-stat-value" id="statPump">运行中</div>
+                        </div>
+                    </div>
+                    <div class="device-stat-item">
+                        <div class="device-stat-icon running" id="statValveIcon">🔧</div>
+                        <div class="device-stat-info">
+                            <div class="device-stat-label">阀门状态</div>
+                            <div class="device-stat-value" id="statValve">正常</div>
+                        </div>
+                    </div>
+                    <div class="device-stat-item">
+                        <div class="device-stat-icon running" id="statTempIcon">🌡️</div>
+                        <div class="device-stat-info">
+                            <div class="device-stat-label">系统温度</div>
+                            <div class="device-stat-value" id="statTemp">25.0°C</div>
+                        </div>
+                    </div>
+                </div>
+
+
+                
+                <div id="canvas-container">
+                    <!-- 自动旋转控制按钮 -->
+                    <div class="auto-rotate-control">
+                        <button class="rotate-btn" id="toggleRotateBtn" type="button">
+                            <span class="rotate-icon">🔄</span>
+                            <span>开始旋转</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="viewport-hud">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    拖拽旋转 · 滚轮缩放 · 右键平移
+                </div>
+                <div class="viewport-stats">
+                    <div class="stat-item">FPS: <span class="stat-val" id="fpsDisplay">60</span></div>
+                    <div class="stat-item">相机: <span class="stat-val" id="cameraPos">6, 4, 6</span></div>
+                    <div class="stat-item">WebGL: <span class="stat-val" id="webglDisplay">OK</span></div>
+                </div>
+            </section>
+
+            <aside class="side-panel right">
+                <div class="panel-block">
+                    <div class="block-header">产线设备</div>
+                    <div class="equipment-panel">
+                        <table class="equipment-table">
+                            <thead>
+                                <tr>
+                                    <th>设备类型</th>
+                                    <th>数量</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>抽真空机 (CZK)</td>
+                                    <td id="czkCount">0</td>
+                                </tr>
+                                <tr>
+                                    <td>灌注机 (GZJ)</td>
+                                    <td id="gzjCount">0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="equipment-summary">
+                            <div class="summary-item">
+                                <span class="summary-label">设备总数</span>
+                                <span class="summary-value" id="equipmentTotal">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block">
+                    <div class="block-header">控制面板</div>
+                    <div class="control-cluster">
+                        <button class="ctrl-btn start" id="btnStart">
+                            <span class="btn-icon">▶</span>
+                            <span class="btn-label">开始灌注</span>
+                        </button>
+                        <button class="ctrl-btn pause" id="btnPause">
+                            <span class="btn-icon">⏸</span>
+                            <span class="btn-label">暂停灌注</span>
+                        </button>
+                        <button class="ctrl-btn stop" id="btnStop">
+                            <span class="btn-icon">⏹</span>
+                            <span class="btn-label">停止灌注</span>
+                        </button>
+                        <button class="ctrl-btn vacuum" id="btnVacuum">
+                            <span class="btn-icon">◉</span>
+                            <span class="btn-label">抽真空</span>
+                        </button>
+                        <button class="ctrl-btn" id="btnVent">
+                            <span class="btn-icon">⬇</span>
+                            <span class="btn-label">泄压</span>
+                        </button>
+                        <button class="ctrl-btn reset" id="btnReset">
+                            <span class="btn-icon">↺</span>
+                            <span class="btn-label">复位</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-block">
+                    <div class="block-header">工艺参数</div>
+                    <div class="param-stack">
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-name">真空度</span>
+                                <span class="param-value vacuum" id="vacuumGaugeNum">0</span>
+                                <span class="param-unit">kPa</span>
+                            </div>
+                            <div class="param-bar">
+                                <div class="param-track">
+                                    <div class="param-fill vacuum" id="vacuumBarFill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-name">流量</span>
+                                <span class="param-value flow" id="flowGaugeNum">0</span>
+                                <span class="param-unit">L/min</span>
+                            </div>
+                            <div class="param-bar">
+                                <div class="param-track">
+                                    <div class="param-fill flow" id="flowBarFill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-name">温度</span>
+                                <span class="param-value temp" id="tempGaugeNum">25</span>
+                                <span class="param-unit">℃</span>
+                            </div>
+                            <div class="param-bar">
+                                <div class="param-track">
+                                    <div class="param-fill temp" id="tempBarFill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-name">压力</span>
+                                <span class="param-value pressure" id="pressureGaugeNum">0</span>
+                                <span class="param-unit">kPa</span>
+                            </div>
+                            <div class="param-bar">
+                                <div class="param-track">
+                                    <div class="param-fill pressure" id="pressureBarFill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Three.js 核心库 -->
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js" onerror="this.onerror=null;this.src='https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.min.js'"></script>
+    <!-- OrbitControls -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js" onerror="this.onerror=null;this.src='https://cdn.bootcdn.net/ajax/libs/three.js/0.128.0/examples/js/controls/OrbitControls.js'"></script>
+    <!-- GLTFLoader -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js" onerror="this.onerror=null;this.src='https://cdn.bootcdn.net/ajax/libs/three.js/0.128.0/examples/js/loaders/GLTFLoader.js'"></script>
+    <!-- DRACOLoader -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/DRACOLoader.js" onerror="this.onerror=null;this.src='https://cdn.bootcdn.net/ajax/libs/three.js/0.128.0/examples/js/loaders/DRACOLoader.js'"></script>
+    <script>
+        const state = {
+            status: 'idle',
+            vacuumPump: false,
+            perfusionPump: false,
+            v1: false,
+            v2: false,
+            v3: false,
+            vacuum: 0,
+            flow: 0,
+            temperature: 25,
+            pressure: 0,
+            progress: 0,
+            alarms: [],
+            alarmCount: 0,
+            startTime: null,
+            elapsed: 0,
+            phase: '待机',
+            deviceLastStatus: {}
+        };
+
+        function createParticles() {
+            const field = document.getElementById('particleField');
+            for (let i = 0; i < 25; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 10 + 's';
+                p.style.animationDuration = (8 + Math.random() * 6) + 's';
+                field.appendChild(p);
+            }
+        }
+
+        let scene, camera, renderer, controls;
+        let models = {}; // 存储所有设备模型
+        let mainModel; // 主模型 (model.glb)
+        let mixer, animationId;
+        let animationActions = []; // 存储动画动作对象
+        let isAnimationPlaying = false; // 动画播放状态
+        let clock = new THREE.Clock();
+        let frameCount = 0, lastFps = 0;
+
+        function init() {
+            // 检查 Three.js 是否加载成功
+            if (typeof THREE === 'undefined') {
+                console.error('Three.js 库未加载，请检查网络连接');
+                document.getElementById('canvas-container').innerHTML = 
+                    '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#ef4444;font-size:14px;">' +
+                    'Three.js 加载失败，请刷新页面重试</div>';
+                return;
+            }
+            
+            const container = document.getElementById('canvas-container');
+            const w = container.clientWidth, h = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020408);
+            scene.fog = new THREE.FogExp2(0x020408, 0.012);
+
+            camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+            camera.position.set(15, 10, 15);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.3;
+            
+            // 设置canvas的z-index，确保它在浮动面板下面
+            const canvas = renderer.domElement;
+            canvas.style.position = 'relative';
+            canvas.style.zIndex = '10';
+            
+            container.appendChild(canvas);
+
+            // 检查 OrbitControls 是否加载成功
+            if (typeof THREE.OrbitControls === 'undefined') {
+                console.error('OrbitControls 加载失败，使用备用控制方案');
+                // 创建一个简单的备用控制对象
+                controls = {
+                    update: function() {},
+                    enableDamping: false,
+                    autoRotate: false
+                };
+            } else {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.minDistance = 2;
+                controls.maxDistance = 35; // 限制最远视角
+                controls.autoRotate = false; // 初始状态关闭自动旋转
+                controls.autoRotateSpeed = 0.4;
+            }
+
+            // 基础环境光 + 主光源
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambient);
+
+            // 添加主方向光，提供立体感和阴影
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            mainLight.position.set(10, 20, 10);
+            mainLight.castShadow = true;
+            scene.add(mainLight);
+
+            // 添加补光，减少暗部
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            fillLight.position.set(-10, 10, -10);
+            scene.add(fillLight);
+
+            // 创建流光效果的网格地面
+            const gridSize = 1000;
+            const gridDivisions = 200;
+            
+            // 使用自定义着色器创建流光网格
+            const gridGeometry = new THREE.BufferGeometry();
+            const gridPositions = [];
+            const gridColors = [];
+            const gridLineIndices = [];
+            
+            const step = gridSize / gridDivisions;
+            const halfSize = gridSize / 2;
+            let lineIndex = 0;
+            
+            // 生成网格线顶点
+            for (let i = 0; i <= gridDivisions; i++) {
+                const pos = -halfSize + i * step;
+                
+                // X方向线
+                gridPositions.push(-halfSize, 0, pos);
+                gridPositions.push(halfSize, 0, pos);
+                gridLineIndices.push(lineIndex, lineIndex + 1);
+                lineIndex += 2;
+                
+                // Z方向线
+                gridPositions.push(pos, 0, -halfSize);
+                gridPositions.push(pos, 0, halfSize);
+                gridLineIndices.push(lineIndex, lineIndex + 1);
+                lineIndex += 2;
+            }
+            
+            gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(gridPositions, 3));
+            gridGeometry.setAttribute('lineIndex', new THREE.Float32BufferAttribute(
+                gridLineIndices.flatMap(idx => [idx, idx]), 1
+            ));
+            
+            // 自定义着色器材质 - 流光效果 + 距离渐变淡出
+            const gridMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    color: { value: new THREE.Color(0x00d4ff) },
+                    glowColor: { value: new THREE.Color(0xffffff) },
+                    fadeStart: { value: 60.0 },
+                    fadeEnd: { value: 100.0 }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    varying float vPosition;
+                    varying float vDistance;
+                    attribute float lineIndex;
+                    uniform float time;
+                    
+                    void main() {
+                        vUv = uv;
+                        vPosition = position.x + position.z;
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        vDistance = -mvPosition.z;
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    uniform vec3 color;
+                    uniform vec3 glowColor;
+                    uniform float fadeStart;
+                    uniform float fadeEnd;
+                    varying float vPosition;
+                    varying float vDistance;
+                    
+                    void main() {
+                        // 距离渐变淡出效果
+                        float fadeFactor = 1.0 - smoothstep(fadeStart, fadeEnd, vDistance);
+                        
+                        // 创建流动的光波效果
+                        float wave1 = sin(vPosition * 0.5 + time * 2.0) * 0.5 + 0.5;
+                        float wave2 = sin(vPosition * 0.3 - time * 1.5) * 0.5 + 0.5;
+                        float wave3 = sin(vPosition * 0.8 + time * 3.0) * 0.5 + 0.5;
+                        
+                        // 组合多个波形
+                        float glow = wave1 * 0.5 + wave2 * 0.3 + wave3 * 0.2;
+                        glow = pow(glow, 2.0);
+                        
+                        // 基础颜色 + 流光
+                        vec3 finalColor = mix(color, glowColor, glow * 0.8);
+                        float alpha = (0.3 + glow * 0.7) * fadeFactor;
+                        
+                        gl_FragColor = vec4(finalColor, alpha);
+                    }
+                `,
+                transparent: true,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            
+            const grid = new THREE.LineSegments(gridGeometry, gridMaterial);
+            grid.position.y = 0;
+            scene.add(grid);
+            
+            // 保存材质引用用于动画更新
+            window.gridMaterial = gridMaterial;
+            
+            // 添加地面平面 - 带距离渐变淡出效果
+            const planeGeometry = new THREE.PlaneGeometry(gridSize, gridSize);
+            const planeMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    color: { value: new THREE.Color(0x020810) },
+                    fadeStart: { value: 60.0 },
+                    fadeEnd: { value: 100.0 }
+                },
+                vertexShader: `
+                    varying float vDistance;
+                    void main() {
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        vDistance = -mvPosition.z;
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 color;
+                    uniform float fadeStart;
+                    uniform float fadeEnd;
+                    varying float vDistance;
+                    void main() {
+                        float fadeFactor = 1.0 - smoothstep(fadeStart, fadeEnd, vDistance);
+                        float alpha = 0.6 * fadeFactor;
+                        gl_FragColor = vec4(color, alpha);
+                    }
+                `,
+                transparent: true,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = -0.01;
+            scene.add(plane);
+
+            loadModel();
+
+            window.addEventListener('resize', onResize);
+            
+            // 初始调整大小，确保canvas尺寸正确
+            setTimeout(onResize, 100);
+            
+            createParticles();
+            
+            // 添加点击事件处理
+            setupClickHandler();
+            
+            animate();
+
+            document.getElementById('btnStart').addEventListener('click', testRandomFault);
+            document.getElementById('btnPause').addEventListener('click', pausePerfuse);
+            document.getElementById('btnStop').addEventListener('click', stopPerfuse);
+            document.getElementById('btnVacuum').addEventListener('click', startVacuum);
+            document.getElementById('btnVent').addEventListener('click', vent);
+            document.getElementById('btnReset').addEventListener('click', reset);
+
+            setInterval(updateData, 100);
+            setInterval(tickClock, 1000);
+            tickClock();
+        }
+
+        function loadModel() {
+            // 检查 GLTFLoader 是否可用
+            if (typeof THREE.GLTFLoader === 'undefined') {
+                console.error('GLTFLoader 加载失败，使用备用模型');
+                document.querySelector('.loading-text').textContent = 'GLTFLoader 加载失败，显示备用模型';
+                createFallbackModels();
+                return;
+            }
+            
+            const loader = new THREE.GLTFLoader();
+            
+            // 设置DRACOLoader用于解压Draco压缩的模型
+            if (typeof THREE.DRACOLoader !== 'undefined') {
+                const dracoLoader = new THREE.DRACOLoader();
+                dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
+                loader.setDRACOLoader(dracoLoader);
+                console.log('DRACOLoader 已配置');
+            } else {
+                console.warn('DRACOLoader 不可用，尝试直接加载模型');
+            }
+            
+            console.log('开始加载主模型 model.glb...');
+            
+            loader.load(
+                'model.glb',
+                (gltf) => {
+                    console.log('主模型加载成功!');
+                    
+                    mainModel = gltf.scene;
+                    
+                    // 保持模型原始坐标，不进行缩放和位置调整
+                    console.log('主模型原始位置:', mainModel.position);
+                    
+                    mainModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            
+                            if (!child.material || child.material.name === '') {
+                                console.warn('模型部分材质缺失，应用默认材质:', child.name);
+                                child.material = new THREE.MeshStandardMaterial({
+                                    color: 0x888888,
+                                    metalness: 0.5,
+                                    roughness: 0.5
+                                });
+                            }
+                            
+                            if (child.geometry) {
+                                child.geometry.computeVertexNormals();
+                            }
+                        }
+                    });
+
+                    // 初始化动画
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        console.log('主模型包含动画:', gltf.animations.length);
+                        mixer = new THREE.AnimationMixer(mainModel);
+                        
+                        // 存储动画到模型中
+                        mainModel.animations = gltf.animations;
+                        
+                        // 存储动画动作对象
+                        animationActions = [];
+                        gltf.animations.forEach((clip, index) => {
+                            console.log('创建动画动作', index, clip.name);
+                            try {
+                                const action = mixer.clipAction(clip);
+                                console.log('动画动作创建成功:', action);
+                                animationActions.push(action);
+                            } catch (e) {
+                                console.error('创建动画动作失败:', e);
+                            }
+                        });
+                        console.log('动画动作数组长度:', animationActions.length);
+                        
+                        // 初始状态不播放动画，保持停止状态
+                        console.log('模型动画已初始化为停止状态');
+                    }
+
+                    scene.add(mainModel);
+                    console.log('主模型已添加到场景');
+                    
+                    loadDeviceModels(loader);
+                },
+                (progress) => {
+                    const loaded = progress.loaded;
+                    const total = progress.total;
+                    const pct = total > 0 ? (loaded / total * 100).toFixed(0) : '?';
+                    document.querySelector('.loading-text').textContent = `加载主模型 ${pct}%`;
+                },
+                (err) => {
+                    console.error('主模型加载失败:', err);
+                    // 主模型加载失败后，仍然尝试加载设备模型
+                    loadDeviceModels(loader);
+                }
+            );
+        }
+        
+        function loadDeviceModels(loader) {
+            console.log('开始加载24个设备模型...');
+            
+            let loadedCount = 0;
+            const totalModels = deviceConfigs.length;
+            
+            deviceConfigs.forEach((device, index) => {
+                const path = device.path;
+                console.log(`加载设备模型 ${index + 1}/${totalModels}: ${device.name}`);
+                
+                loader.load(
+                    path,
+                    (gltf) => {
+                        console.log(`设备模型加载成功: ${device.name}`);
+                        
+                        const deviceModel = gltf.scene;
+                        
+                        // 保持模型原始坐标，不进行位置调整
+                        // 模型将使用其在3D软件中的原始位置
+                        
+                        console.log(`${device.name} 原始位置:`, deviceModel.position);
+
+                        deviceModel.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                                
+                                if (!child.material || child.material.name === '') {
+                                    console.warn('模型部分材质缺失，应用默认材质:', child.name);
+                                    child.material = new THREE.MeshStandardMaterial({
+                                        color: 0x888888,
+                                        metalness: 0.5,
+                                        roughness: 0.5
+                                    });
+                                }
+                                
+                                if (child.geometry) {
+                                    child.geometry.computeVertexNormals();
+                                }
+                            }
+                        });
+
+                        models[device.id] = deviceModel;
+                        scene.add(deviceModel);
+                        
+                        // 添加设备状态图标
+                        addDeviceStatusIcon(device, deviceModel);
+                        
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            console.log(`${device.name} 包含 ${gltf.animations.length} 个动画`);
+                        }
+                        
+                        loadedCount++;
+                        updateLoadingProgress(loadedCount, totalModels);
+                        
+                        if (loadedCount === totalModels) {
+                            console.log('所有设备模型加载完成');
+                            document.getElementById('modelLoading').style.display = 'none';
+                            // 更新设备数量
+                            updateEquipmentCount();
+                            // 为设备模型添加点击事件
+                            setupDeviceClickEvents();
+                            // 应用设备全息效果
+                            applyDeviceHologramEffects();
+                        }
+                    },
+                    (progress) => {
+                    },
+                    (err) => {
+                        console.error(`设备模型加载失败: ${device.name}`, err);
+                        
+                        const fallbackModel = createFallbackDeviceModel(device);
+                        models[device.id] = fallbackModel;
+                        scene.add(fallbackModel);
+                        
+                        loadedCount++;
+                        updateLoadingProgress(loadedCount, totalModels);
+                        
+                        if (loadedCount === totalModels) {
+                            console.log('所有设备模型加载完成（部分使用备用模型）');
+                            document.getElementById('modelLoading').style.display = 'none';
+                            // 更新设备数量
+                            updateEquipmentCount();
+                            // 为设备模型添加点击事件
+                            setupDeviceClickEvents();
+                            // 应用设备全息效果
+                            applyDeviceHologramEffects();
+                        }
+                    }
+                );
+            });
+        }
+        
+        function updateLoadingProgress(loaded, total) {
+            const pct = ((loaded / total) * 100).toFixed(0);
+            document.querySelector('.loading-text').textContent = `加载中 ${pct}% (${loaded}/${total})`;
+            console.log(`加载进度: ${pct}% (${loaded}/${total})`);
+        }
+
+        function updateEquipmentCount() {
+            // 统计 CZK 和 GZJ 设备数量
+            const czkCount = deviceConfigs.filter(config => config.name.startsWith('CZK')).length;
+            const gzjCount = deviceConfigs.filter(config => config.name.startsWith('GZJ')).length;
+            const totalCount = czkCount + gzjCount;
+            
+            // 更新产线设备面板数据
+            document.getElementById('czkCount').textContent = czkCount;
+            document.getElementById('gzjCount').textContent = gzjCount;
+            document.getElementById('equipmentTotal').textContent = totalCount;
+            
+            console.log(`设备数量已更新: CZK=${czkCount}, GZJ=${gzjCount}, 总计=${totalCount}`);
+        }
+
+        // 数据面板相关变量
+        let activePanel = null;
+        let floatingPanels = {};
+
+        // 创建悬浮面板容器
+        function createFloatingPanelsContainer() {
+            let container = document.getElementById('floatingPanels');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'floatingPanels';
+                container.style.position = 'absolute';
+                container.style.top = '0';
+                container.style.left = '0';
+                container.style.width = '100%';
+                container.style.height = '100%';
+                container.style.pointerEvents = 'none';
+                container.style.zIndex = '50';
+                document.getElementById('canvas-container').appendChild(container);
+            }
+            return container;
+        }
+
+        // 切换悬浮面板的展开/收起状态
+        function toggleFloatingPanel(deviceId, deviceName, position) {
+            const container = createFloatingPanelsContainer();
+            
+            // 检查是否已有面板
+            if (floatingPanels[deviceId]) {
+                // 移除现有面板
+                const panel = floatingPanels[deviceId];
+                container.removeChild(panel);
+                delete floatingPanels[deviceId];
+                return;
+            }
+            
+            // 创建新的悬浮面板
+            const panel = document.createElement('div');
+            panel.className = 'floating-panel';
+            panel.id = `floating_panel_${deviceId}`;
+            panel.style.pointerEvents = 'auto';
+            panel.style.transition = 'all 0.3s ease';
+            
+            // 面板头部
+            const header = document.createElement('div');
+            header.className = 'floating-panel-header';
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.justifyContent = 'space-between';
+            header.style.gap = '12px';
+            header.style.padding = '10px 16px';
+            header.style.background = 'linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%)';
+            header.style.border = '1px solid rgba(0, 213, 255, 0.4)';
+            header.style.borderRadius = '6px 6px 0 0';
+            header.style.backdropFilter = 'blur(12px)';
+            header.style.minWidth = '220px';
+            
+            // 标题部分
+            const titleSection = document.createElement('div');
+            titleSection.style.display = 'flex';
+            titleSection.style.alignItems = 'center';
+            titleSection.style.gap = '8px';
+            
+            // 状态指示灯
+            const statusIndicator = document.createElement('div');
+            statusIndicator.className = 'floating-panel-status';
+            statusIndicator.style.width = '10px';
+            statusIndicator.style.height = '10px';
+            statusIndicator.style.borderRadius = '50%';
+            
+            // 根据设备状态和系统状态设置颜色
+            const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+            let statusColor = '#4ade80'; // 默认绿色
+            let statusText = '正常';
+            
+            // 设备故障/警告状态优先显示
+            if (deviceConfig && deviceConfig.status === 'red') {
+                statusColor = '#f87171';
+                statusText = '故障';
+            } else if (deviceConfig && deviceConfig.status === 'yellow') {
+                statusColor = '#facc15';
+                statusText = '警告';
+            } else {
+                // 正常设备根据系统状态显示
+                if (state.status === 'paused') {
+                    statusColor = '#facc15';
+                    statusText = '待机';
+                } else if (state.status === 'stopped' || state.status === 'idle') {
+                    statusColor = '#94a3b8';
+                    statusText = '停机';
+                } else {
+                    statusColor = '#4ade80';
+                    statusText = '正常';
+                }
+            }
+            
+            statusIndicator.style.background = statusColor;
+            statusIndicator.style.boxShadow = `0 0 8px ${statusColor}`;
+            
+            // 面板标题
+            const title = document.createElement('div');
+            title.className = 'floating-panel-title';
+            title.style.fontSize = '14px';
+            title.style.fontWeight = '600';
+            title.style.color = '#f9fafb';
+            title.style.fontFamily = 'Orbitron, sans-serif';
+            title.textContent = deviceName;
+            
+            // 关闭按钮
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'floating-panel-close';
+            closeBtn.style.width = '20px';
+            closeBtn.style.height = '20px';
+            closeBtn.style.display = 'flex';
+            closeBtn.style.alignItems = 'center';
+            closeBtn.style.justifyContent = 'center';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.style.color = '#94a3b8';
+            closeBtn.style.fontSize = '16px';
+            closeBtn.style.fontWeight = 'bold';
+            closeBtn.style.borderRadius = '50%';
+            closeBtn.style.transition = 'all 0.2s ease';
+            closeBtn.textContent = '×';
+            
+            // 关闭按钮悬停效果
+            closeBtn.addEventListener('mouseenter', function() {
+                this.style.color = '#f9fafb';
+                this.style.background = 'rgba(248, 113, 113, 0.2)';
+            });
+            closeBtn.addEventListener('mouseleave', function() {
+                this.style.color = '#94a3b8';
+                this.style.background = 'transparent';
+            });
+            
+            // 关闭按钮点击事件
+            closeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const container = document.getElementById('floatingPanels');
+                if (container && panel) {
+                    container.removeChild(panel);
+                    delete floatingPanels[deviceId];
+                }
+            });
+            
+            // 组装头部
+            titleSection.appendChild(statusIndicator);
+            titleSection.appendChild(title);
+            header.appendChild(titleSection);
+            header.appendChild(closeBtn);
+            
+            // 面板内容
+            const content = document.createElement('div');
+            content.className = 'floating-panel-content';
+            content.style.padding = '18px 16px';
+            content.style.background = 'rgba(17, 24, 39, 0.9)';
+            content.style.border = '1px solid rgba(0, 213, 255, 0.2)';
+            content.style.borderTop = 'none';
+            content.style.borderRadius = '0 0 6px 6px';
+            content.style.backdropFilter = 'blur(12px)';
+            content.style.minWidth = '220px';
+            
+            // 生成设备数据
+            let vacuum = (Math.random() * 100).toFixed(2);
+            let pressure = (Math.random() * 10).toFixed(2);
+            let temperature = (20 + Math.random() * 10).toFixed(1);
+            
+            // 根据设备状态调整数据
+            if (deviceConfig) {
+                switch (deviceConfig.status) {
+                    case 'red': // 故障状态
+                        vacuum = (Math.random() * 500 + 100).toFixed(2); // 真空度异常高
+                        pressure = (Math.random() * 20 + 15).toFixed(2); // 压力异常高
+                        temperature = (50 + Math.random() * 20).toFixed(1); // 温度异常高
+                        break;
+                    case 'yellow': // 警告状态
+                        vacuum = (Math.random() * 200 + 50).toFixed(2); // 真空度偏高
+                        pressure = (Math.random() * 15 + 10).toFixed(2); // 压力偏高
+                        temperature = (40 + Math.random() * 10).toFixed(1); // 温度偏高
+                        break;
+                    default: // 正常状态
+                        // 保持正常范围数据
+                        break;
+                }
+            }
+            
+            // 面板内容行
+            const contentHTML = `
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0, 213, 255, 0.1); gap: 20px;">
+                    <span style="font-size: 12px; color: #94a3b8; flex: 1;">真空度</span>
+                    <span style="font-size: 12px; color: #00d5ff; font-family: Orbitron, sans-serif; flex: 1; text-align: right;">${vacuum} Pa</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0, 213, 255, 0.1); gap: 20px;">
+                    <span style="font-size: 12px; color: #94a3b8; flex: 1;">压力</span>
+                    <span style="font-size: 12px; color: #00d5ff; font-family: Orbitron, sans-serif; flex: 1; text-align: right;">${pressure} MPa</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(0, 213, 255, 0.1); gap: 20px;">
+                    <span style="font-size: 12px; color: #94a3b8; flex: 1;">温度</span>
+                    <span style="font-size: 12px; color: #00d5ff; font-family: Orbitron, sans-serif; flex: 1; text-align: right;">${temperature} °C</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 10px 0; gap: 20px;">
+                    <span style="font-size: 12px; color: #94a3b8; flex: 1;">状态</span>
+                    <span style="font-size: 12px; color: ${statusColor}; font-family: Orbitron, sans-serif; flex: 1; text-align: right;">${statusText}</span>
+                </div>
+            `;
+            
+            content.innerHTML = contentHTML;
+            
+            // 如果设备处于故障或警告状态，添加处理故障按钮
+            if (deviceConfig && (deviceConfig.status === 'red' || deviceConfig.status === 'yellow')) {
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.padding = '16px 0 8px 0';
+                buttonContainer.style.display = 'flex';
+                buttonContainer.style.justifyContent = 'center';
+                
+                const fixButton = document.createElement('button');
+                fixButton.className = 'fix-fault-btn';
+                fixButton.style.padding = '8px 16px';
+                fixButton.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)';
+                fixButton.style.border = '1px solid #10b981';
+                fixButton.style.borderRadius = '4px';
+                fixButton.style.color = '#10b981';
+                fixButton.style.fontSize = '12px';
+                fixButton.style.fontWeight = '600';
+                fixButton.style.fontFamily = 'Orbitron, sans-serif';
+                fixButton.style.cursor = 'pointer';
+                fixButton.style.transition = 'all 0.2s ease';
+                fixButton.textContent = '处理故障';
+                
+                // 按钮悬停效果
+                fixButton.addEventListener('mouseenter', function() {
+                    this.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.2)';
+                    this.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+                });
+                
+                fixButton.addEventListener('mouseleave', function() {
+                    this.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)';
+                    this.style.boxShadow = 'none';
+                });
+                
+                // 按钮点击事件
+                fixButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    handleDeviceFault(deviceId);
+                    
+                    // 关闭面板
+                    const container = document.getElementById('floatingPanels');
+                    if (container && panel) {
+                        container.removeChild(panel);
+                        delete floatingPanels[deviceId];
+                    }
+                });
+                
+                buttonContainer.appendChild(fixButton);
+                content.appendChild(buttonContainer);
+            }
+            
+            // 组装面板
+            panel.appendChild(header);
+            panel.appendChild(content);
+            
+            // 添加到容器
+            container.appendChild(panel);
+            
+            // 存储面板引用
+            floatingPanels[deviceId] = panel;
+            
+            // 初始定位
+            updateFloatingPanelPosition(deviceId, position);
+            
+            console.log(`为设备 ${deviceName} 创建了悬浮面板`);
+        }
+
+        // 更新悬浮面板位置
+        function updateFloatingPanelPosition(deviceId, position) {
+            const panel = floatingPanels[deviceId];
+            if (!panel || !position) return;
+            
+            // 将3D位置转换为屏幕坐标
+            const vector = new THREE.Vector3(position.x, position.y + 1, position.z);
+            vector.project(camera);
+            
+            const canvas = renderer.domElement;
+            const x = (vector.x * 0.5 + 0.5) * canvas.clientWidth;
+            const y = (-vector.y * 0.5 + 0.5) * canvas.clientHeight;
+            
+            // 计算相机与物体的距离
+            const distance = camera.position.distanceTo(position);
+            
+            // 根据距离计算缩放比例（距离越远，面板越小）
+            const baseScale = 1;
+            const minScale = 0.7; // 最小缩放比例
+            const maxScale = 1.5; // 最大缩放比例
+            
+            // 距离在5-20之间时，缩放比例从1.5线性变化到0.7
+            let scale;
+            if (distance < 5) {
+                scale = maxScale;
+            } else if (distance > 20) {
+                scale = minScale;
+            } else {
+                scale = maxScale - (maxScale - minScale) * (distance - 5) / 15;
+            }
+            
+            // 计算面板尺寸
+            const panelWidth = 220 * scale;
+            const panelHeight = 140 * scale;
+            
+            // 获取3D可视化区域的边界（中间红色边框区域）
+            const canvasContainer = document.getElementById('canvas-container');
+            if (canvasContainer) {
+                const containerRect = canvasContainer.getBoundingClientRect();
+                const canvasRect = canvas.getBoundingClientRect();
+                
+                // 计算相对于canvas容器的坐标
+                const relativeX = x;
+                const relativeY = y;
+                
+                // 计算面板的最终位置，确保不超出容器边界
+                let finalX = relativeX - panelWidth / 2;
+                let finalY = relativeY - panelHeight;
+                
+                // 水平边界检查
+                if (finalX < 0) {
+                    finalX = 10; // 左边距10px
+                } else if (finalX + panelWidth > containerRect.width) {
+                    finalX = containerRect.width - panelWidth - 10; // 右边距10px
+                }
+                
+                // 垂直边界检查
+                if (finalY < 0) {
+                    finalY = 10; // 上边距10px
+                } else if (finalY + panelHeight > containerRect.height) {
+                    finalY = containerRect.height - panelHeight - 10; // 下边距10px
+                }
+                
+                // 设置面板位置和缩放
+                panel.style.position = 'absolute';
+                panel.style.left = `${finalX}px`;
+                panel.style.top = `${finalY}px`;
+                panel.style.transform = `scale(${scale})`;
+                panel.style.transformOrigin = 'center top';
+            }
+        }
+
+        // 创建数据面板 (已禁用)
+        function createDataPanel(deviceId, deviceName) {
+            console.log('数据面板创建已禁用');
+        }
+
+        // 更新面板数据
+        function updatePanelData(deviceId) {
+            if (!activePanel) return;
+            
+            // 模拟数据
+            const vacuum = (Math.random() * 100).toFixed(2);
+            const pressure = (Math.random() * 10).toFixed(2);
+            const temperature = (20 + Math.random() * 10).toFixed(1);
+            const phase = state.phase || '准备中';
+            
+            // 计算运行时长
+            let runtime = '00:00:00';
+            if (state.startTime) {
+                const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+                const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+                const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+                const seconds = (elapsed % 60).toString().padStart(2, '0');
+                runtime = `${hours}:${minutes}:${seconds}`;
+            }
+            
+            // 模拟报警信息
+            const alarm = Math.random() > 0.95 ? '真空度异常' : '无报警';
+            
+            // 更新面板数据
+            document.getElementById(`${deviceId}_vacuum`).textContent = `${vacuum} Pa`;
+            document.getElementById(`${deviceId}_pressure`).textContent = `${pressure} MPa`;
+            document.getElementById(`${deviceId}_temperature`).textContent = `${temperature} °C`;
+            document.getElementById(`${deviceId}_phase`).textContent = phase;
+            document.getElementById(`${deviceId}_runtime`).textContent = runtime;
+            document.getElementById(`${deviceId}_alarm`).textContent = alarm;
+            
+            // 更新状态指示灯
+            const statusIndicator = activePanel.querySelector('.status-indicator');
+            const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+            if (deviceConfig) {
+                // 设备故障/警告状态优先显示
+                if (deviceConfig.status === 'red') {
+                    statusIndicator.className = 'status-indicator red';
+                    statusIndicator.style.background = '#f87171';
+                    statusIndicator.style.boxShadow = '0 0 8px #f87171';
+                } else if (deviceConfig.status === 'yellow') {
+                    statusIndicator.className = 'status-indicator yellow';
+                    statusIndicator.style.background = '#facc15';
+                    statusIndicator.style.boxShadow = '0 0 8px #facc15';
+                } else {
+                    // 正常设备根据系统状态显示
+                    if (state.status === 'paused') {
+                        statusIndicator.className = 'status-indicator';
+                        statusIndicator.style.background = '#facc15';
+                        statusIndicator.style.boxShadow = '0 0 8px #facc15';
+                    } else if (state.status === 'stopped' || state.status === 'idle') {
+                        statusIndicator.className = 'status-indicator';
+                        statusIndicator.style.background = '#94a3b8';
+                        statusIndicator.style.boxShadow = '0 0 8px #94a3b8';
+                    } else {
+                        statusIndicator.className = 'status-indicator green';
+                        statusIndicator.style.background = '#4ade80';
+                        statusIndicator.style.boxShadow = '0 0 8px #4ade80';
+                    }
+                }
+            }
+        }
+
+        // 为设备模型添加点击事件和交互标识
+        function addDeviceClickEvents() {
+            // 为所有 CZK 和 GZJ 模型添加点击事件
+            Object.keys(models).forEach(deviceId => {
+                const model = models[deviceId];
+                if (model) {
+                    // 为模型添加可点击属性
+                    model.userData.clickable = true;
+                    model.userData.deviceId = deviceId;
+                    
+                    // 为模型的所有子网格添加可点击属性和交互标识
+                    model.traverse(child => {
+                        if (child.isMesh) {
+                            child.userData.clickable = true;
+                            child.userData.deviceId = deviceId;
+                            
+                            // 保存原始材质，用于恢复
+                            child.userData.originalMaterial = child.material;
+                        }
+                    });
+                }
+            });
+            
+            console.log('为设备模型添加了点击事件和交互标识');
+        }
+
+        // 为设备模型创建点击事件
+        function setupDeviceClickEvents() {
+            addDeviceClickEvents();
+        }
+
+        // 设置点击事件处理
+        function setupClickHandler() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            let hoveredObject = null;
+            let hoverLabel = null;
+            
+            // 创建设备标签
+            function createDeviceLabel(deviceName, deviceId, position) {
+                const label = document.createElement('div');
+                label.className = 'device-hover-label';
+                label.style.position = 'absolute';
+                label.style.padding = '6px 12px';
+                label.style.background = 'linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%)';
+                label.style.border = '1px solid rgba(0, 213, 255, 0.4)';
+                label.style.borderRadius = '4px';
+                label.style.color = '#00d5ff';
+                label.style.fontFamily = 'Orbitron, sans-serif';
+                label.style.fontSize = '12px';
+                label.style.fontWeight = '600';
+                label.style.backdropFilter = 'blur(12px)';
+                label.style.pointerEvents = 'none';
+                label.style.zIndex = '1000';
+                label.style.transition = 'all 0.3s ease';
+                label.style.boxShadow = '0 0 10px rgba(0, 213, 255, 0.3)';
+                label.style.display = 'flex';
+                label.style.alignItems = 'center';
+                label.style.gap = '8px';
+                
+                // 状态指示器
+                const statusIndicator = document.createElement('div');
+                statusIndicator.className = 'device-status-indicator';
+                statusIndicator.style.width = '8px';
+                statusIndicator.style.height = '8px';
+                statusIndicator.style.borderRadius = '50%';
+                statusIndicator.style.boxShadow = '0 0 8px currentColor';
+                
+                // 根据设备状态和系统状态设置颜色
+                const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+                // 设备故障/警告状态优先显示
+                if (deviceConfig && deviceConfig.status === 'red') {
+                    statusIndicator.style.background = '#f87171';
+                    statusIndicator.style.color = '#f87171';
+                } else if (deviceConfig && deviceConfig.status === 'yellow') {
+                    statusIndicator.style.background = '#facc15';
+                    statusIndicator.style.color = '#facc15';
+                } else {
+                    // 正常设备根据系统状态显示
+                    if (state.status === 'paused') {
+                        statusIndicator.style.background = '#facc15';
+                        statusIndicator.style.color = '#facc15';
+                    } else if (state.status === 'stopped' || state.status === 'idle') {
+                        statusIndicator.style.background = '#94a3b8';
+                        statusIndicator.style.color = '#94a3b8';
+                    } else {
+                        statusIndicator.style.background = '#4ade80';
+                        statusIndicator.style.color = '#4ade80';
+                    }
+                }
+                
+                // 设备名称文本
+                const nameText = document.createElement('span');
+                nameText.textContent = deviceName;
+                
+                // 组装标签
+                label.appendChild(statusIndicator);
+                label.appendChild(nameText);
+                
+                const container = document.getElementById('canvas-container');
+                if (container) {
+                    container.appendChild(label);
+                }
+                
+                return label;
+            }
+            
+            // 更新标签位置
+            function updateLabelPosition(label, position) {
+                if (!label || !position) return;
+                
+                const vector = new THREE.Vector3(position.x, position.y + 1.2, position.z);
+                vector.project(camera);
+                
+                const canvas = renderer.domElement;
+                const x = (vector.x * 0.5 + 0.5) * canvas.clientWidth;
+                const y = (-vector.y * 0.5 + 0.5) * canvas.clientHeight;
+                
+                label.style.left = `${x - label.offsetWidth / 2}px`;
+                label.style.top = `${y - 40}px`;
+            }
+            
+            // 移除标签
+            function removeLabel() {
+                if (hoverLabel) {
+                    const container = document.getElementById('canvas-container');
+                    if (container && hoverLabel.parentNode === container) {
+                        container.removeChild(hoverLabel);
+                    }
+                    hoverLabel = null;
+                }
+            }
+            
+            // 鼠标移动事件处理 - 用于全息效果和设备标签
+            function onMouseMove(event) {
+                // 计算鼠标在屏幕上的位置
+                const canvas = renderer.domElement;
+                const rect = canvas.getBoundingClientRect();
+                
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                // 更新射线
+                raycaster.setFromCamera(mouse, camera);
+                
+                // 计算射线与所有可点击对象的交点
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                
+                // 检查是否有交点
+                let currentHoveredObject = null;
+                let currentIntersect = null;
+                for (let i = 0; i < intersects.length; i++) {
+                    const intersect = intersects[i];
+                    const object = intersect.object;
+                    
+                    // 检查对象是否可点击
+                    if (object.userData.clickable && object.userData.deviceId) {
+                        currentHoveredObject = object;
+                        currentIntersect = intersect;
+                        break;
+                    }
+                }
+                
+                // 恢复之前悬停的对象的材质
+                if (hoveredObject && hoveredObject !== currentHoveredObject) {
+                    // 如果是故障设备，恢复到故障全息效果
+                    if (hoveredObject.userData.isFaulty) {
+                        const deviceId = hoveredObject.userData.deviceId;
+                        const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+                        if (deviceConfig) {
+                            const color = deviceConfig.status === 'red' ? 0xff3333 : 0xffff33;
+                            const faultHologramMaterial = new THREE.MeshPhongMaterial({
+                                color: color,
+                                transparent: true,
+                                opacity: 0.6,
+                                side: THREE.DoubleSide,
+                                shininess: 100,
+                                specular: 0xffffff
+                            });
+                            // 应用到所有子对象
+                            applyMaterialToChildren(hoveredObject, faultHologramMaterial);
+                        }
+                    } else {
+                        // 正常设备恢复原始材质
+                        if (hoveredObject.userData.hoverOriginalMaterial) {
+                            restoreHoverOriginalMaterials(hoveredObject);
+                            // 清除悬停材质标记
+                            hoveredObject.userData.hoverOriginalMaterial = null;
+                        }
+                    }
+                    removeLabel();
+                }
+                
+                // 为当前悬停的对象添加全息透明效果和标签
+                if (currentHoveredObject && currentHoveredObject !== hoveredObject) {
+                    // 检查是否是故障设备，如果是则跳过悬停效果
+                    if (!currentHoveredObject.userData.isFaulty) {
+                        // 保存原始材质（如果还没保存）
+                        if (!currentHoveredObject.userData.hoverOriginalMaterial) {
+                            saveHoverOriginalMaterials(currentHoveredObject);
+                        }
+                        
+                        // 创建全息透明材质
+                        const hologramMaterial = new THREE.MeshPhongMaterial({
+                            color: 0x00d5ff,
+                            transparent: true,
+                            opacity: 0.6,
+                            side: THREE.DoubleSide,
+                            shininess: 100,
+                            specular: 0xffffff
+                        });
+                        
+                        // 应用到所有子对象
+                        applyMaterialToChildren(currentHoveredObject, hologramMaterial);
+                    }
+                    
+                    // 创建并显示设备标签
+                    const deviceId = currentHoveredObject.userData.deviceId;
+                    const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+                    if (deviceConfig) {
+                        hoverLabel = createDeviceLabel(deviceConfig.name, deviceId, currentIntersect.point);
+                        updateLabelPosition(hoverLabel, currentIntersect.point);
+                    }
+                } else if (currentHoveredObject && hoverLabel) {
+                    // 更新标签位置
+                    updateLabelPosition(hoverLabel, currentIntersect.point);
+                    
+                    // 更新标签状态
+                    const deviceId = currentHoveredObject.userData.deviceId;
+                    const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+                    const statusIndicator = hoverLabel.querySelector('.device-status-indicator');
+                    if (statusIndicator) {
+                        // 设备故障/警告状态优先显示
+                        if (deviceConfig && deviceConfig.status === 'red') {
+                            statusIndicator.style.background = '#f87171';
+                            statusIndicator.style.color = '#f87171';
+                        } else if (deviceConfig && deviceConfig.status === 'yellow') {
+                            statusIndicator.style.background = '#facc15';
+                            statusIndicator.style.color = '#facc15';
+                        } else {
+                            // 正常设备根据系统状态显示
+                            if (state.status === 'paused') {
+                                statusIndicator.style.background = '#facc15';
+                                statusIndicator.style.color = '#facc15';
+                            } else if (state.status === 'stopped' || state.status === 'idle') {
+                                statusIndicator.style.background = '#94a3b8';
+                                statusIndicator.style.color = '#94a3b8';
+                            } else {
+                                statusIndicator.style.background = '#4ade80';
+                                statusIndicator.style.color = '#4ade80';
+                            }
+                        }
+                    }
+                }
+                
+                // 更新悬停对象
+                hoveredObject = currentHoveredObject;
+                
+                // 更新鼠标样式
+                if (currentHoveredObject) {
+                    renderer.domElement.style.cursor = 'pointer';
+                } else {
+                    renderer.domElement.style.cursor = 'default';
+                }
+            }
+            
+            // 鼠标离开画布事件处理
+            function onMouseLeave() {
+                // 恢复悬停对象的材质
+                if (hoveredObject) {
+                    // 如果是故障设备，恢复到故障全息效果
+                    if (hoveredObject.userData.isFaulty) {
+                        const deviceId = hoveredObject.userData.deviceId;
+                        const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+                        if (deviceConfig) {
+                            const color = deviceConfig.status === 'red' ? 0xff3333 : 0xffff33;
+                            const faultHologramMaterial = new THREE.MeshPhongMaterial({
+                                color: color,
+                                transparent: true,
+                                opacity: 0.6,
+                                side: THREE.DoubleSide,
+                                shininess: 100,
+                                specular: 0xffffff
+                            });
+                            // 应用到所有子对象
+                            applyMaterialToChildren(hoveredObject, faultHologramMaterial);
+                        }
+                    } else {
+                        // 正常设备恢复原始材质
+                        if (hoveredObject.userData.hoverOriginalMaterial) {
+                            restoreHoverOriginalMaterials(hoveredObject);
+                            // 清除悬停材质标记
+                            hoveredObject.userData.hoverOriginalMaterial = null;
+                        }
+                    }
+                }
+                
+                // 移除标签
+                removeLabel();
+                
+                hoveredObject = null;
+                renderer.domElement.style.cursor = 'default';
+            }
+            
+            // 鼠标点击事件处理
+            function onMouseClick(event) {
+                // 计算鼠标在屏幕上的位置
+                const canvas = renderer.domElement;
+                const rect = canvas.getBoundingClientRect();
+                
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                
+                // 更新射线
+                raycaster.setFromCamera(mouse, camera);
+                
+                // 计算射线与所有可点击对象的交点
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                
+                // 检查是否有交点
+                for (let i = 0; i < intersects.length; i++) {
+                    const intersect = intersects[i];
+                    const object = intersect.object;
+                    
+                    // 检查对象是否可点击
+                    if (object.userData.clickable && object.userData.deviceId) {
+                        const deviceId = object.userData.deviceId;
+                        const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+                        
+                        if (deviceConfig) {
+                            // 切换悬浮面板
+                            const container = createFloatingPanelsContainer();
+                            toggleFloatingPanel(deviceId, deviceConfig.name, intersect.point);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 添加鼠标事件监听器
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseleave', onMouseLeave);
+            renderer.domElement.addEventListener('click', onMouseClick);
+            
+            console.log('点击事件处理已设置');
+        }
+        
+        function createFallbackDeviceModel(device) {
+            console.log(`为 ${device.name} 创建备用几何体`);
+            const group = new THREE.Group();
+            
+            // 设备主体
+            const mainGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const mainMat = new THREE.MeshStandardMaterial({ 
+                color: 0x3b82f6, 
+                metalness: 0.7, 
+                roughness: 0.3
+            });
+            const main = new THREE.Mesh(mainGeo, mainMat);
+            main.position.set(0, 0.25, 0);
+            main.castShadow = true;
+            group.add(main);
+            
+            // 底座
+            const baseGeo = new THREE.BoxGeometry(0.6, 0.1, 0.6);
+            const baseMat = new THREE.MeshStandardMaterial({ 
+                color: 0x1e3a5f, 
+                metalness: 0.5, 
+                roughness: 0.5 
+            });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.set(0, 0, 0);
+            base.castShadow = true;
+            base.receiveShadow = true;
+            group.add(base);
+            
+            return group;
+        }
+        
+        function createFallbackModels() {
+            console.log('创建所有设备的备用几何体');
+            
+            deviceConfigs.forEach((device, index) => {
+                const fallbackModel = createFallbackDeviceModel(device);
+                models[device.id] = fallbackModel;
+                scene.add(fallbackModel);
+            });
+            
+            document.getElementById('modelLoading').style.display = 'none';
+            console.log('所有备用几何体已添加到场景');
+            adjustCameraForDevices();
+        }
+        
+        function adjustCameraForDevices() {
+            console.log('调整相机位置以查看所有设备');
+            
+            // 计算所有设备的边界
+            const box = new THREE.Box3();
+            
+            // 包含主模型
+            if (mainModel) {
+                const mainBox = new THREE.Box3().setFromObject(mainModel);
+                box.union(mainBox);
+            }
+            
+            // 包含所有设备模型
+            Object.values(models).forEach(model => {
+                if (model) {
+                    const modelBox = new THREE.Box3().setFromObject(model);
+                    box.union(modelBox);
+                }
+            });
+            
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            
+            console.log('所有模型边界尺寸:', size);
+            console.log('所有模型中心点:', center);
+            
+            // 计算合适的相机距离
+            const diagonal = Math.sqrt(size.x * size.x + size.y * size.y + size.z * size.z);
+            const distance = diagonal * 1.5;
+            
+            console.log('计算的相机距离:', distance);
+            
+            // 设置相机位置
+            camera.position.set(
+                center.x + distance * 0.7,
+                center.y + distance * 0.5,
+                center.z + distance * 0.7
+            );
+            
+            // 看向中心点
+            camera.lookAt(center);
+            
+            console.log('相机新位置:', camera.position);
+        }
+
+        function onResize() {
+            const c = document.getElementById('canvas-container');
+            if (!c || !camera || !renderer) return;
+            
+            const width = c.clientWidth;
+            const height = c.clientHeight;
+            
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+            
+            console.log('窗口大小调整:', width, 'x', height);
+        }
+
+        let lastPanelUpdate = 0;
+        const panelUpdateInterval = 1000; // 1秒更新一次
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            controls.update();
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+            
+            // 更新模型动画
+            if (mixer && isAnimationPlaying) {
+                mixer.update(delta);
+            }
+            
+            // 更新网格流光效果
+            if (window.gridMaterial) {
+                window.gridMaterial.uniforms.time.value = time;
+            }
+
+            // 更新面板数据（每1秒更新一次）
+            const now = performance.now();
+            if (activePanel && now - lastPanelUpdate >= panelUpdateInterval) {
+                // 提取设备ID
+                const panelId = activePanel.id;
+                const deviceId = panelId.replace('panel_', '');
+                updatePanelData(deviceId);
+                lastPanelUpdate = now;
+            }
+
+            // 更新所有悬浮面板的位置
+            Object.keys(floatingPanels).forEach(deviceId => {
+                const model = models[deviceId];
+                if (model) {
+                    // 获取模型的中心点
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = box.getCenter(new THREE.Vector3());
+                    updateFloatingPanelPosition(deviceId, center);
+                }
+            });
+
+            // 更新状态图标朝向
+            updateIconOrientation();
+
+            renderer.render(scene, camera);
+
+            frameCount++;
+            if (now - lastFps >= 1000) {
+                document.getElementById('fpsDisplay').textContent = frameCount;
+                frameCount = 0;
+                lastFps = now;
+            }
+            
+            // 更新相机坐标显示
+            if (camera && frameCount % 10 === 0) {
+                const pos = camera.position;
+                const rot = camera.rotation;
+                
+                // 转换旋转角度为度（更易读）
+                const rotDeg = {
+                    x: (rot.x * 180 / Math.PI).toFixed(1),
+                    y: (rot.y * 180 / Math.PI).toFixed(1),
+                    z: (rot.z * 180 / Math.PI).toFixed(1)
+                };
+                
+                // 在页面上显示相机位置
+                document.getElementById('cameraPos').textContent = 
+                    `${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
+                
+
+            }
+        }
+
+        // 更新状态图标朝向，使其始终面向相机
+        function updateIconOrientation() {
+            deviceConfigs.forEach(device => {
+                const model = models[device.id];
+                if (model && model.userData.statusIconContainer) {
+                    const iconContainer = model.userData.statusIconContainer;
+                    iconContainer.lookAt(camera.position);
+                }
+            });
+        }
+
+        // 更新浮动面板状态信息
+        function updateFloatingPanelStatus(deviceId) {
+            const panel = floatingPanels[deviceId];
+            if (!panel) return;
+            
+            const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+            if (!deviceConfig) return;
+            
+            // 更新状态指示灯
+            const statusIndicator = panel.querySelector('.floating-panel-status');
+            if (statusIndicator) {
+                let statusColor = '#4ade80'; // 默认绿色
+                
+                // 设备故障/警告状态优先显示
+                if (deviceConfig.status === 'red') {
+                    // 故障状态 - 红色
+                    statusColor = '#f87171';
+                } else if (deviceConfig.status === 'yellow') {
+                    // 警告状态 - 黄色
+                    statusColor = '#facc15';
+                } else {
+                    // 正常设备根据系统状态显示
+                    if (state.status === 'paused') {
+                        statusColor = '#facc15';
+                    } else if (state.status === 'stopped' || state.status === 'idle') {
+                        statusColor = '#94a3b8';
+                    } else {
+                        statusColor = '#4ade80';
+                    }
+                }
+                
+                statusIndicator.style.background = statusColor;
+                statusIndicator.style.boxShadow = `0 0 8px ${statusColor}`;
+            }
+            
+            // 检查并更新处理故障按钮
+            const fixButton = panel.querySelector('.fix-fault-btn');
+            if (fixButton) {
+                if (deviceConfig.status === 'red' || deviceConfig.status === 'yellow') {
+                    fixButton.style.display = 'inline-block';
+                } else {
+                    fixButton.style.display = 'none';
+                }
+            }
+            
+            // 更新状态文本
+            const statusTextElement = panel.querySelector('.floating-panel-title + span');
+            if (statusTextElement) {
+                let statusText = '正常';
+                
+                // 设备故障/警告状态优先显示
+                if (deviceConfig.status === 'red') {
+                    statusText = '故障';
+                } else if (deviceConfig.status === 'yellow') {
+                    statusText = '警告';
+                } else {
+                    // 正常设备根据系统状态显示
+                    if (state.status === 'paused') {
+                        statusText = '待机';
+                    } else if (state.status === 'stopped' || state.status === 'idle') {
+                        statusText = '停机';
+                    } else {
+                        statusText = '正常';
+                    }
+                }
+                
+                statusTextElement.textContent = statusText;
+            }
+        }
+
+        // 测试故障函数 - 随机选取设备设置为故障状态
+        function testRandomFault() {
+            console.log('测试故障按钮被点击');
+            
+            // 随机选择1-3个设备
+            const faultCount = Math.floor(Math.random() * 3) + 1;
+            const availableDevices = deviceConfigs.filter(d => d.status === 'green');
+            
+            if (availableDevices.length === 0) {
+                console.log('没有可设置为故障的设备');
+                addAlarm('没有可设置为故障的设备', 'info');
+                return;
+            }
+            
+            // 随机打乱数组并取前faultCount个
+            const shuffled = availableDevices.sort(() => Math.random() - 0.5);
+            const selectedDevices = shuffled.slice(0, Math.min(faultCount, shuffled.length));
+            
+            selectedDevices.forEach(device => {
+                // 只设置为故障状态
+                const newStatus = 'red';
+                const statusText = '故障';
+                const alarmType = 'error';
+                
+                // 更新设备状态
+                device.status = newStatus;
+                
+                // 同步更新 deviceLastStatus，防止重复记录报警
+                state.deviceLastStatus[device.id] = newStatus;
+                
+                // 记录设备类型
+                const deviceType = device.id.startsWith('CZK') ? '抽真空机' : '灌注机';
+                
+                // 添加报警记录
+                addAlarm(`${device.name} (${deviceType}) ${statusText}`, alarmType);
+                
+                console.log(`设备 ${device.name} 被设置为${statusText}状态`);
+            });
+            
+            // 应用全息效果
+            applyDeviceHologramEffects();
+            
+            // 更新设备状态图标
+            selectedDevices.forEach(device => {
+                updateDeviceStatusIcon(device);
+                updateFloatingPanelStatus(device.id);
+            });
+            
+            // 执行开始灌注流程
+            startPerfuse();
+        }
+
+        function startPerfuse() {
+            console.log('开始灌注按钮被点击');
+            if (state.status === 'running') {
+                console.log('已经在运行状态，跳过');
+                return;
+            }
+            
+            const wasPaused = state.status === 'paused';
+            
+            state.status = 'running';
+            state.vacuumPump = true;
+            state.perfusionPump = true;
+            state.v1 = true;
+            state.v2 = true;
+            if (!wasPaused) {
+                state.startTime = Date.now();
+            }
+            state.phase = '灌注中';
+            refreshUI();
+            
+            // 播放模型动画
+            console.log('播放模型动画:', mixer, animationActions.length);
+            if (mixer && animationActions.length > 0) {
+                if (!wasPaused) {
+                    console.log('停止所有动作');
+                    animationActions.forEach((action, index) => {
+                        console.log('停止动作', index);
+                        try {
+                            if (action && action.stop) {
+                                action.stop();
+                            } else {
+                                console.error('无效的动作对象:', action);
+                            }
+                        } catch (e) {
+                            console.error('停止动作失败:', e);
+                        }
+                    });
+                    console.log('播放所有动作');
+                    animationActions.forEach((action, index) => {
+                        console.log('播放动作', index);
+                        try {
+                            if (action && action.play) {
+                                action.play();
+                            } else {
+                                console.error('无效的动作对象:', action);
+                            }
+                        } catch (e) {
+                            console.error('播放动作失败:', e);
+                        }
+                    });
+                } else {
+                    console.log('从暂停状态继续播放动画');
+                }
+                isAnimationPlaying = true;
+                console.log('模型动画已开始播放，isAnimationPlaying:', isAnimationPlaying);
+            } else {
+                console.log('没有动画可以播放');
+            }
+            
+            // 更新所有设备状态图标和浮动面板状态
+            deviceConfigs.forEach(device => {
+                updateDeviceStatusIcon(device);
+                updateFloatingPanelStatus(device.id);
+            });
+        }
+
+        function pausePerfuse() {
+            console.log('暂停灌注按钮被点击');
+            if (state.status !== 'running') {
+                console.log('不在运行状态，跳过');
+                return;
+            }
+            state.status = 'paused';
+            state.vacuumPump = false;
+            state.perfusionPump = false;
+            state.phase = '已暂停';
+            refreshUI();
+            
+            // 暂停模型动画
+            console.log('暂停模型动画:', mixer, animationActions.length);
+            if (mixer && animationActions.length > 0) {
+                console.log('设置动画状态为暂停');
+                // 直接设置 isAnimationPlaying 为 false，停止动画更新
+                isAnimationPlaying = false;
+                console.log('模型动画已暂停，isAnimationPlaying:', isAnimationPlaying);
+            } else {
+                console.log('没有动画可以暂停');
+            }
+            
+            // 更新所有设备状态图标和浮动面板状态
+            deviceConfigs.forEach(device => {
+                updateDeviceStatusIcon(device);
+                updateFloatingPanelStatus(device.id);
+            });
+        }
+
+        function stopPerfuse() {
+            console.log('停止灌注按钮被点击');
+            state.status = 'stopped';
+            state.vacuumPump = false;
+            state.perfusionPump = false;
+            state.v1 = false;
+            state.v2 = false;
+            state.v3 = false;
+            state.phase = '已停止';
+            refreshUI();
+            
+            // 复位所有设备状态为正常
+            deviceConfigs.forEach(device => {
+                device.status = 'green';
+                state.deviceLastStatus[device.id] = 'green';
+            });
+            applyDeviceHologramEffects();
+            addAlarm('所有设备状态已复位', 'info');
+            console.log('所有设备状态已复位');
+            
+            // 复位模型动画
+            console.log('复位模型动画:', mixer, animationActions.length);
+            if (mixer && animationActions.length > 0) {
+                console.log('停止所有动作');
+                animationActions.forEach((action, index) => {
+                    console.log('停止动作', index);
+                    try {
+                        if (action && action.stop) {
+                            action.stop();
+                        } else {
+                            console.error('无效的动作对象:', action);
+                        }
+                    } catch (e) {
+                        console.error('停止动作失败:', e);
+                    }
+                });
+                isAnimationPlaying = false;
+                console.log('模型动画已复位，isAnimationPlaying:', isAnimationPlaying);
+            } else {
+                console.log('没有动画可以复位');
+            }
+            
+            // 更新所有设备状态图标和浮动面板状态
+            deviceConfigs.forEach(device => {
+                updateDeviceStatusIcon(device);
+                updateFloatingPanelStatus(device.id);
+            });
+        }
+
+        function startVacuum() {
+            state.vacuumPump = true;
+            state.v1 = true;
+            state.phase = '抽真空';
+            refreshUI();
+        }
+
+        function vent() {
+            state.v3 = true;
+            state.phase = '泄压';
+            refreshUI();
+        }
+
+        function reset() {
+            state.status = 'idle';
+            state.vacuumPump = false;
+            state.perfusionPump = false;
+            state.v1 = false;
+            state.v2 = false;
+            state.v3 = false;
+            state.vacuum = 0;
+            state.flow = 0;
+            state.temperature = 25;
+            state.pressure = 0;
+            state.progress = 0;
+            state.startTime = null;
+            state.elapsed = 0;
+            state.phase = '待机';
+            refreshUI();
+        }
+
+        function updateData() {
+            if (state.vacuumPump && state.vacuum > -101.3) {
+                state.vacuum = Math.max(-101.3, state.vacuum - (Math.random() * 2 + 0.5));
+            } else if (!state.vacuumPump && state.vacuum < 0) {
+                state.vacuum = Math.min(0, state.vacuum + (Math.random() * 0.5));
+            }
+
+            if (state.perfusionPump && state.status === 'running') {
+                state.flow = 50 + Math.random() * 50;
+            } else {
+                state.flow = Math.max(0, state.flow - (Math.random() * 2 + 1));
+            }
+
+            if (state.status === 'running') {
+                state.temperature = Math.min(80, state.temperature + (Math.random() * 0.3 - 0.1));
+                state.pressure = Math.min(500, state.pressure + (Math.random() * 5 + 2));
+                state.progress = Math.min(100, state.progress + (Math.random() * 0.5));
+            }
+
+            if (state.v3) {
+                state.pressure = Math.max(0, state.pressure - (Math.random() * 10 + 5));
+            }
+
+            if (state.startTime) {
+                state.elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+            }
+
+            checkDeviceAlarms();
+            applyDeviceHologramEffects();
+            updateDisplays();
+        }
+
+        function checkDeviceAlarms() {
+            deviceConfigs.forEach(device => {
+                const lastStatus = state.deviceLastStatus[device.id];
+                const currentStatus = device.status;
+
+                if (currentStatus === 'red' && lastStatus !== currentStatus) {
+                    const alarmType = 'error';
+                    const deviceType = device.id.startsWith('CZK') ? '抽真空机' : '灌注机';
+                    const alarmMsg = `${device.name} (${deviceType}) 故障`;
+                    addAlarm(alarmMsg, alarmType);
+                }
+
+                state.deviceLastStatus[device.id] = currentStatus;
+            });
+        }
+
+        function applyDeviceHologramEffects() {
+            deviceConfigs.forEach(device => {
+                const model = models[device.id];
+                if (model) {
+                    const currentStatus = device.status;
+                    const lastStatus = model.userData.lastStatus;
+
+                    // 初始加载时或状态变化时更新状态
+                    if (!lastStatus || currentStatus !== lastStatus) {
+                        if (currentStatus === 'green') {
+                            // 恢复原始材质（如果之前有保存）
+                            if (model.userData.realOriginalMaterial) {
+                                // 递归恢复所有子对象的材质
+                                restoreOriginalMaterials(model);
+                            }
+
+                            // 标记为正常状态
+                            model.userData.isFaulty = false;
+                        } else if (currentStatus === 'red' || currentStatus === 'yellow') {
+                            // 标记为故障/警告状态，但不应用全息效果
+                            model.userData.isFaulty = true;
+                        }
+
+                        model.userData.lastStatus = currentStatus;
+                    }
+                }
+            });
+        }
+
+        // 添加设备状态图标
+        function addDeviceStatusIcon(device, model) {
+            // 创建图标容器
+            const iconContainer = new THREE.Group();
+            iconContainer.name = 'statusIconContainer';
+            
+            // 计算设备的边界盒，确定图标位置
+            const box = new THREE.Box3().setFromObject(model);
+            const boxSize = new THREE.Vector3();
+            box.getSize(boxSize);
+            
+            // 计算图标位置（设备顶部）
+            const iconPosition = new THREE.Vector3(
+                box.min.x + (box.max.x - box.min.x) / 2,
+                box.max.y + 1, // 高于设备顶部
+                box.min.z + (box.max.z - box.min.z) / 2
+            );
+            
+            iconContainer.position.copy(iconPosition);
+            
+            // 保存图标容器引用
+            model.userData.statusIconContainer = iconContainer;
+            
+            // 添加到场景
+            scene.add(iconContainer);
+            
+            // 创建初始状态图标
+            updateDeviceStatusIcon(device);
+        }
+
+        // 更新设备状态图标
+        function updateDeviceStatusIcon(device) {
+            const model = models[device.id];
+            if (!model || !model.userData.statusIconContainer) return;
+            
+            const iconContainer = model.userData.statusIconContainer;
+            iconContainer.clear();
+            
+            // 根据系统状态和设备状态选择图标
+            let iconPath;
+            
+            // 检查设备是否有故障
+            const isFaulty = device.status === 'red' || device.status === 'yellow';
+            
+            // 根据系统状态和设备状态确定图标
+            if (isFaulty) {
+                // 故障设备始终显示故障图标
+                iconPath = 'error.png';
+            } else {
+                // 正常设备根据系统状态显示不同图标
+                switch (state.status) {
+                    case 'idle':
+                    case 'stopped':
+                        iconPath = 'stop.png';
+                        break;
+                    case 'running':
+                        iconPath = 'run.png';
+                        break;
+                    case 'paused':
+                        iconPath = 'standby.png';
+                        break;
+                    default:
+                        iconPath = 'stop.png';
+                }
+            }
+            
+            console.log('加载状态图标:', iconPath, '系统状态:', state.status, '设备状态:', device.status);
+            
+            // 尝试多种路径格式
+            const pathsToTry = [
+                iconPath,
+                './' + iconPath,
+                '/' + iconPath,
+                encodeURI(iconPath),
+                './' + encodeURI(iconPath),
+                '/' + encodeURI(iconPath)
+            ];
+            
+            // 尝试加载图片
+            loadIconWithFallback(pathsToTry, 0, device, iconContainer);
+        }
+
+        // 尝试多种路径加载图标，失败后使用备用方案
+        function loadIconWithFallback(paths, index, device, container) {
+            if (index >= paths.length) {
+                console.error('所有路径都加载失败，使用备用图标');
+                // 创建备用图标
+                createFallbackIcon(device, container);
+                return;
+            }
+            
+            const currentPath = paths[index];
+            console.log('尝试加载:', currentPath);
+            
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.load(
+                currentPath,
+                (texture) => {
+                    console.log('图片加载成功:', currentPath);
+                    // 创建平面几何体
+                    const geometry = new THREE.PlaneGeometry(1, 1);
+                    const material = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        transparent: true,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                    });
+                    
+                    const iconMesh = new THREE.Mesh(geometry, material);
+                    iconMesh.name = 'statusIcon';
+                    
+                    // 调整大小和位置
+                    iconMesh.scale.set(0.5, 0.5, 1);
+                    iconMesh.position.y = 0;
+                    
+                    container.add(iconMesh);
+                },
+                undefined,
+                (error) => {
+                    console.error('加载失败:', currentPath, error);
+                    // 尝试下一个路径
+                    loadIconWithFallback(paths, index + 1, device, container);
+                }
+            );
+        }
+
+        // 创建备用图标
+        function createFallbackIcon(device, container) {
+            // 创建一个简单的几何体作为备用
+            const geometry = new THREE.SphereGeometry(0.2, 8, 8);
+            const material = new THREE.MeshBasicMaterial({
+                color: device.status === 'green' ? 0x4ade80 : 
+                       device.status === 'red' ? 0xef4444 : 0xf59e0b
+            });
+            const iconMesh = new THREE.Mesh(geometry, material);
+            iconMesh.name = 'statusIcon';
+            container.add(iconMesh);
+        }
+
+        function saveOriginalMaterials(object) {
+            if (object.material) {
+                object.userData.realOriginalMaterial = object.material;
+            }
+            if (object.children) {
+                object.children.forEach(child => {
+                    saveOriginalMaterials(child);
+                });
+            }
+        }
+
+        function saveHoverOriginalMaterials(object) {
+            if (object.material) {
+                object.userData.hoverOriginalMaterial = object.material;
+            }
+            if (object.children) {
+                object.children.forEach(child => {
+                    saveHoverOriginalMaterials(child);
+                });
+            }
+        }
+
+        function restoreOriginalMaterials(object) {
+            if (object.userData.realOriginalMaterial) {
+                object.material = object.userData.realOriginalMaterial;
+            }
+            if (object.children) {
+                object.children.forEach(child => {
+                    restoreOriginalMaterials(child);
+                });
+            }
+        }
+
+        function restoreHoverOriginalMaterials(object) {
+            if (object.userData.hoverOriginalMaterial) {
+                object.material = object.userData.hoverOriginalMaterial;
+            }
+            if (object.children) {
+                object.children.forEach(child => {
+                    restoreHoverOriginalMaterials(child);
+                });
+            }
+        }
+
+        function applyMaterialToChildren(object, material) {
+            if (object.material) {
+                object.material = material;
+            }
+            if (object.children) {
+                object.children.forEach(child => {
+                    applyMaterialToChildren(child, material);
+                });
+            }
+        }
+
+        function handleDeviceFault(deviceId) {
+            const deviceConfig = deviceConfigs.find(config => config.id === deviceId);
+            if (deviceConfig) {
+                // 记录设备类型
+                const deviceType = deviceId.startsWith('CZK') ? '抽真空机' : '灌注机';
+                
+                // 更改设备状态为正常
+                const oldStatus = deviceConfig.status;
+                deviceConfig.status = 'green';
+                
+                // 应用全息效果更新
+                applyDeviceHologramEffects();
+                
+                // 更新设备状态图标
+                updateDeviceStatusIcon(deviceConfig);
+                
+                // 更新浮动面板状态
+                updateFloatingPanelStatus(deviceId);
+                
+                // 添加处理完成的报警记录
+                const alarmMsg = `${deviceConfig.name} (${deviceType}) 故障已处理`;
+                addAlarm(alarmMsg, 'info');
+                
+                console.log(`设备 ${deviceConfig.name} 故障已处理，状态已恢复正常`);
+            }
+        }
+
+        function updateDisplays() {
+            document.getElementById('vacuumVal').innerHTML = state.vacuum.toFixed(1) + '<span class="unit">kPa</span>';
+            document.getElementById('flowVal').innerHTML = state.flow.toFixed(1) + '<span class="unit">L/min</span>';
+            document.getElementById('tempVal').innerHTML = state.temperature.toFixed(1) + '<span class="unit">℃</span>';
+            document.getElementById('pressureVal').innerHTML = state.pressure.toFixed(1) + '<span class="unit">kPa</span>';
+
+            document.getElementById('vacuumGaugeNum').textContent = state.vacuum.toFixed(1);
+            document.getElementById('flowGaugeNum').textContent = state.flow.toFixed(1);
+            document.getElementById('tempGaugeNum').textContent = state.temperature.toFixed(1);
+            document.getElementById('pressureGaugeNum').textContent = state.pressure.toFixed(1);
+
+            // 更新进度条宽度
+            document.getElementById('vacuumBarFill').style.width = Math.min(100, Math.abs(state.vacuum) / 101.3 * 100) + '%';
+            document.getElementById('flowBarFill').style.width = Math.min(100, state.flow / 100 * 100) + '%';
+            document.getElementById('tempBarFill').style.width = Math.min(100, (state.temperature - 20) / 60 * 100) + '%';
+            document.getElementById('pressureBarFill').style.width = Math.min(100, state.pressure / 500 * 100) + '%';
+            
+            // 更新设备状态统计栏
+            updateDeviceStats();
+        }
+        
+        function updateDeviceStats() {
+            // 真空泵状态
+            const vacuumIcon = document.getElementById('statVacuumIcon');
+            const vacuumValue = document.getElementById('statVacuum');
+            if (state.vacuumPump) {
+                vacuumIcon.className = 'device-stat-icon running';
+                vacuumValue.textContent = '运行中';
+                vacuumValue.style.color = 'var(--green-glow)';
+            } else {
+                vacuumIcon.className = 'device-stat-icon';
+                vacuumIcon.style.background = 'rgba(100, 116, 139, 0.2)';
+                vacuumIcon.style.color = 'var(--text-dim)';
+                vacuumValue.textContent = '停止';
+                vacuumValue.style.color = 'var(--text-dim)';
+            }
+            
+            // 灌注泵状态
+            const pumpIcon = document.getElementById('statPumpIcon');
+            const pumpValue = document.getElementById('statPump');
+            if (state.perfusionPump && state.status === 'running') {
+                pumpIcon.className = 'device-stat-icon running';
+                pumpValue.textContent = '运行中';
+                pumpValue.style.color = 'var(--green-glow)';
+            } else if (state.perfusionPump) {
+                pumpIcon.className = 'device-stat-icon warning';
+                pumpValue.textContent = '待机';
+                pumpValue.style.color = 'var(--yellow-glow)';
+            } else {
+                pumpIcon.className = 'device-stat-icon';
+                pumpIcon.style.background = 'rgba(100, 116, 139, 0.2)';
+                pumpIcon.style.color = 'var(--text-dim)';
+                pumpValue.textContent = '停止';
+                pumpValue.style.color = 'var(--text-dim)';
+            }
+            
+            // 阀门状态
+            const valveIcon = document.getElementById('statValveIcon');
+            const valveValue = document.getElementById('statValve');
+            const activeValves = [state.v1, state.v2, state.v3].filter(v => v).length;
+            if (activeValves === 3) {
+                valveIcon.className = 'device-stat-icon running';
+                valveValue.textContent = '全开';
+                valveValue.style.color = 'var(--green-glow)';
+            } else if (activeValves > 0) {
+                valveIcon.className = 'device-stat-icon warning';
+                valveValue.textContent = `${activeValves}/3 开`;
+                valveValue.style.color = 'var(--yellow-glow)';
+            } else {
+                valveIcon.className = 'device-stat-icon';
+                valveIcon.style.background = 'rgba(100, 116, 139, 0.2)';
+                valveIcon.style.color = 'var(--text-dim)';
+                valveValue.textContent = '全关';
+                valveValue.style.color = 'var(--text-dim)';
+            }
+            
+            // 系统温度
+            const tempIcon = document.getElementById('statTempIcon');
+            const tempValue = document.getElementById('statTemp');
+            tempValue.textContent = state.temperature.toFixed(1) + '°C';
+            if (state.temperature > 60) {
+                tempIcon.className = 'device-stat-icon error';
+                tempValue.style.color = 'var(--red-glow)';
+            } else if (state.temperature > 45) {
+                tempIcon.className = 'device-stat-icon warning';
+                tempValue.style.color = 'var(--yellow-glow)';
+            } else {
+                tempIcon.className = 'device-stat-icon running';
+                tempValue.style.color = 'var(--green-glow)';
+            }
+        }
+
+        function refreshUI() {
+            const orb = document.getElementById('systemOrb');
+            orb.className = 'status-orb';
+            if (state.status === 'running') {
+                orb.classList.add('active');
+                document.getElementById('systemOrbText').textContent = '运行中';
+            } else if (state.status === 'paused') {
+                orb.classList.add('warning');
+                document.getElementById('systemOrbText').textContent = '已暂停';
+            } else if (state.status === 'stopped') {
+                orb.classList.add('error');
+                document.getElementById('systemOrbText').textContent = '已停止';
+            } else {
+                document.getElementById('systemOrbText').textContent = '系统待机';
+            }
+
+            // 更新设备状态统计
+            const normalCount = deviceConfigs.filter(d => d.status === 'green' && state.status !== 'paused').length;
+            const pausedCount = deviceConfigs.filter(d => d.status === 'green' && state.status === 'paused').length;
+            const warningCount = deviceConfigs.filter(d => d.status === 'yellow').length;
+            const faultCount = deviceConfigs.filter(d => d.status === 'red').length;
+            const stoppedCount = deviceConfigs.filter(d => d.status === 'gray' || d.status === 'offline').length;
+
+            document.getElementById('statusNormalCount').textContent = normalCount;
+            document.getElementById('statusPausedCount').textContent = pausedCount;
+            document.getElementById('statusFaultCount').textContent = faultCount;
+            document.getElementById('statusStoppedCount').textContent = stoppedCount;
+
+            document.getElementById('btnStart').classList.toggle('on', state.status === 'running');
+            document.getElementById('btnPause').classList.toggle('on', state.status === 'paused');
+            document.getElementById('btnStop').classList.toggle('on', state.status === 'stopped');
+            document.getElementById('btnVacuum').classList.toggle('on', state.vacuumPump);
+            document.getElementById('btnVent').classList.toggle('on', state.v3);
+        }
+
+        function addAlarm(msg, type) {
+            // 添加所有类型的报警记录
+            state.alarms.unshift({ time: new Date().toLocaleTimeString('zh-CN'), msg, type });
+            if (state.alarms.length > 10) state.alarms.pop();
+            state.alarmCount++;
+            document.getElementById('alarmCount').textContent = state.alarmCount;
+            const log = document.getElementById('alarmLog');
+            log.innerHTML = state.alarms.map(a => `
+                <div class="alarm-entry ${a.type}">
+                    <div class="alarm-time">${a.time}</div>
+                    <div class="alarm-desc">${a.msg}</div>
+                </div>
+            `).join('');
+        }
+
+        function tickClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN');
+        }
+
+        // 设备配置 - 24个设备模型（初始全部为正常状态）
+        const deviceConfigs = [
+            // CZK设备 1-24
+            { id: 'CZK_1', name: 'CZK_1', path: 'CZK_1.glb', status: 'green' },
+            { id: 'CZK_2', name: 'CZK_2', path: 'CZK_2.glb', status: 'green' },
+            { id: 'CZK_3', name: 'CZK_3', path: 'CZK_3.glb', status: 'green' },
+            { id: 'CZK_4', name: 'CZK_4', path: 'CZK_4.glb', status: 'green' },
+            { id: 'CZK_5', name: 'CZK_5', path: 'CZK_5.glb', status: 'green' },
+            { id: 'CZK_6', name: 'CZK_6', path: 'CZK_6.glb', status: 'green' },
+            { id: 'CZK_7', name: 'CZK_7', path: 'CZK_7.glb', status: 'green' },
+            { id: 'CZK_8', name: 'CZK_8', path: 'CZK_8.glb', status: 'green' },
+            { id: 'CZK_9', name: 'CZK_9', path: 'CZK_9.glb', status: 'green' },
+            { id: 'CZK_10', name: 'CZK_10', path: 'CZK_10.glb', status: 'green' },
+            { id: 'CZK_11', name: 'CZK_11', path: 'CZK_11.glb', status: 'green' },
+            { id: 'CZK_12', name: 'CZK_12', path: 'CZK_12.glb', status: 'green' },
+            { id: 'CZK_13', name: 'CZK_13', path: 'CZK_13.glb', status: 'green' },
+            { id: 'CZK_14', name: 'CZK_14', path: 'CZK_14.glb', status: 'green' },
+            { id: 'CZK_15', name: 'CZK_15', path: 'CZK_15.glb', status: 'green' },
+            { id: 'CZK_16', name: 'CZK_16', path: 'CZK_16.glb', status: 'green' },
+            { id: 'CZK_17', name: 'CZK_17', path: 'CZK_17.glb', status: 'green' },
+            { id: 'CZK_18', name: 'CZK_18', path: 'CZK_18.glb', status: 'green' },
+            { id: 'CZK_19', name: 'CZK_19', path: 'CZK_19.glb', status: 'green' },
+            { id: 'CZK_20', name: 'CZK_20', path: 'CZK_20.glb', status: 'green' },
+            { id: 'CZK_21', name: 'CZK_21', path: 'CZK_21.glb', status: 'green' },
+            { id: 'CZK_22', name: 'CZK_22', path: 'CZK_22.glb', status: 'green' },
+            { id: 'CZK_23', name: 'CZK_23', path: 'CZK_23.glb', status: 'green' },
+            { id: 'CZK_24', name: 'CZK_24', path: 'CZK_24.glb', status: 'green' },
+
+            // GZJ设备 1-4
+            { id: 'GZJ_1', name: 'GZJ_1', path: 'GZJ_1.glb', status: 'green' },
+            { id: 'GZJ_2', name: 'GZJ_2', path: 'GZJ_2.glb', status: 'green' },
+            { id: 'GZJ_3', name: 'GZJ_3', path: 'GZJ_3.glb', status: 'green' },
+            { id: 'GZJ_4', name: 'GZJ_4', path: 'GZJ_4.glb', status: 'green' }
+        ];
+
+        // 绑定自动旋转控制按钮事件
+        function setupAutoRotateControl() {
+            const rotateBtn = document.getElementById('toggleRotateBtn');
+            
+            if (rotateBtn) {
+                rotateBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (controls) {
+                        controls.autoRotate = !controls.autoRotate;
+                        
+                        if (controls.autoRotate) {
+                            rotateBtn.classList.add('active');
+                            rotateBtn.innerHTML = '<span class="rotate-icon">🔄</span><span>停止旋转</span>';
+                            console.log('自动旋转已启动');
+                        } else {
+                            rotateBtn.classList.remove('active');
+                            rotateBtn.innerHTML = '<span class="rotate-icon">🔄</span><span>开始旋转</span>';
+                            console.log('自动旋转已停止');
+                        }
+                    }
+                });
+            } else {
+                console.warn('自动旋转控制按钮未找到');
+            }
+        }
+
+        // 重写init函数，添加自动旋转控制
+        const originalInit = init;
+        init = function() {
+            originalInit();
+            
+            // 设置自动旋转控制
+            setupAutoRotateControl();
+        };
+        
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
