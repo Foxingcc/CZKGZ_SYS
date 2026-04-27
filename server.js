@@ -17,7 +17,9 @@ const server = http.createServer((req, res) => {
         '.png': 'image/png',
         '.jpg': 'image/jpg',
         '.gif': 'image/gif',
-        '.glb': 'model/gltf-binary'
+        '.glb': 'model/gltf-binary',
+        '.gltf': 'model/gltf+json',
+        '.bin': 'application/octet-stream'
     };
 
     const contentType = mimeTypes[extname] || 'application/octet-stream';
@@ -25,21 +27,24 @@ const server = http.createServer((req, res) => {
     fs.readFile(filePath, (error, content) => {
         if (error) {
             if(error.code == 'ENOENT') {
-                res.writeHead(404, { 'Content-Type': 'text/html' });
-                res.end('<h1>404 Not Found</h1>', 'utf-8');
-            } else {
+                fs.readFile('./404.html', (error, content) => {
+                    res.writeHead(404, { 'Content-Type': 'text/html' });
+                    res.end(content, 'utf-8');
+                });
+            }
+            else {
                 res.writeHead(500);
                 res.end('Sorry, check with the site admin for error: ' + error.code + ' ..\n');
-                res.end(); 
             }
-        } else {
+        }
+        else {
             res.writeHead(200, { 'Content-Type': contentType });
             res.end(content, 'utf-8');
         }
     });
 });
 
-const PORT = process.env.PORT || 9016;
+const PORT = process.env.PORT || 9090;
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
 });

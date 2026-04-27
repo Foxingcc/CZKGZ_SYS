@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可视化云平台登录页 - 登录</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <!-- 左侧：视觉展示区 -->
+        <section class="visual-section">
+            <!-- 顶部导航 -->
+            <header class="top-header">
+                <div class="logo-group">
+                    <svg viewBox="0 0 24 24" width="28" height="28">
+                        <path fill="#00d4ff" d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l8 4v7.64l-8 4-8-4V8.18l8-4zm-1 5.82v6h2v-6h-2zm0 8v2h2v-2h-2z"/>
+                    </svg>
+                    <span class="app-title">可视化云平台登录页</span>
+                </div>
+            </header>
+
+            <!-- 返回按钮 -->
+            <button class="back-button" title="返回">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+
+            <!-- 几何线条网格背景 -->
+            <div class="isometric-grid"></div>
+
+            <!-- 3D 视觉元素容器 -->
+            <div class="scene-container">
+                <!-- 主云朵（带发光效果） -->
+                <div class="cloud-element">
+                    <div class="cloud-glow"></div>
+                    <div class="cloud-body">
+                        <div class="cloud-main-shape"></div>
+                    </div>
+                    <div class="cloud-ring ring-primary"></div>
+                    <div class="cloud-ring ring-secondary"></div>
+                </div>
+
+                <!-- 数据柱状图 -->
+                <div class="chart-bars">
+                    <div class="bar bar-1"></div>
+                    <div class="bar bar-2"></div>
+                    <div class="bar bar-3"></div>
+                    <div class="bar bar-4"></div>
+                </div>
+
+                <!-- 霓虹发光立方体（大） -->
+                <div class="neon-cube cube-large">
+                    <div class="cube-face front"></div>
+                    <div class="cube-face back"></div>
+                    <div class="cube-face right"></div>
+                    <div class="cube-face left"></div>
+                    <div class="cube-face top"></div>
+                    <div class="cube-face bottom"></div>
+                    <div class="cube-edge edge-front-top"></div>
+                    <div class="cube-edge edge-front-right"></div>
+                    <div class="cube-edge edge-front-bottom"></div>
+                    <div class="cube-edge edge-front-left"></div>
+                </div>
+
+                <!-- 霓虹发光立方体（小） -->
+                <div class="neon-cube cube-small">
+                    <div class="cube-face front"></div>
+                    <div class="cube-face back"></div>
+                    <div class="cube-face right"></div>
+                    <div class="cube-face left"></div>
+                    <div class="cube-face top"></div>
+                    <div class="cube-face bottom"></div>
+                    <div class="cube-edge edge-front-top"></div>
+                    <div class="cube-edge edge-front-right"></div>
+                    <div class="cube-edge edge-front-bottom"></div>
+                    <div class="cube-edge edge-front-left"></div>
+                </div>
+
+                <!-- 装饰性小球 -->
+                <div class="deco-sphere sphere-1"></div>
+                <div class="deco-sphere sphere-2"></div>
+                <div class="deco-sphere sphere-3"></div>
+
+                <!-- 发光平台基座 -->
+                <div class="glow-platform">
+                    <div class="platform-base">
+                        <div class="platform-ring ring-1"></div>
+                        <div class="platform-ring ring-2"></div>
+                        <div class="platform-ring ring-3"></div>
+                        <div class="platform-ring ring-4"></div>
+                        <div class="platform-surface"></div>
+                    </div>
+                    <div class="platform-pedestal"></div>
+                </div>
+
+                <!-- 小方块组合 -->
+                <div class="block-cluster">
+                    <div class="cluster-block block-a"></div>
+                    <div class="cluster-block block-b"></div>
+                    <div class="cluster-block block-c"></div>
+                    <div class="cluster-block block-d"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧：登录表单区 -->
+        <section class="form-section">
+            <div class="glass-card">
+                <!-- 卡片头部 -->
+                <div class="card-header">
+                    <h1 class="card-title">欢迎登录</h1>
+                    <p class="card-subtitle">welcome to login</p>
+                </div>
+
+                <!-- 登录表单 -->
+                <form class="login-form" id="loginForm">
+                    <!-- 用户名输入 -->
+                    <div class="field-group">
+                        <div class="input-wrapper">
+                            <span class="field-icon user-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </span>
+                            <input type="text" 
+                                   id="username" 
+                                   name="username" 
+                                   placeholder="请输入用户名"
+                                   autocomplete="username"
+                                   required>
+                        </div>
+                    </div>
+
+                    <!-- 密码输入 -->
+                    <div class="field-group">
+                        <div class="input-wrapper">
+                            <span class="field-icon lock-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                            </span>
+                            <input type="password" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="请输入密码"
+                                   autocomplete="current-password"
+                                   required>
+                            <button type="button" class="visibility-toggle" id="togglePassword">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-eye-open">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-eye-closed" style="display:none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 辅助选项 -->
+                    <div class="options-row">
+                        <label class="remember-checkbox">
+                            <input type="checkbox" id="rememberMe">
+                            <span class="check-box"></span>
+                            <span class="check-label">记住密码</span>
+                        </label>
+                        <a href="#" class="forgot-link">忘记密码</a>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span class="btn-label">登 录</span>
+                        <span class="btn-spinner">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <!-- 错误提示 -->
+                    <div class="error-alert" id="errorMessage"></div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+</html>
