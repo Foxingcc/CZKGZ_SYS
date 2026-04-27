@@ -28,7 +28,8 @@ const state = {
     perfusionProgress: 0,   // 灌注工序进度 (0-100)
     // 工艺统计
     stability: 98.5,        // 工艺稳定性 (%)
-    successRate: 96.2       // 成功率 (%)
+    successRate: 96.2,      // 成功率 (%)
+    isRunning: false        // 系统是否正在运行
 };
 
 function createParticles() {
@@ -319,7 +320,7 @@ function init() {
     
     animate();
 
-    document.getElementById('btnStart').addEventListener('click', testRandomFault);
+    document.getElementById('btnStart').addEventListener('click', startPerfuse);
     document.getElementById('btnPause').addEventListener('click', pausePerfuse);
     document.getElementById('btnReset').addEventListener('click', reset);
 
@@ -608,6 +609,12 @@ function animate() {
     // 更新设备状态标签位置
     if (window.deviceStatusLabels) {
         updateDeviceStatusLabels();
+        updateDeviceStatusImages();
+    }
+    
+    // 更新设备数据面板（如果已打开）
+    if (window.updateDeviceDataPanel) {
+        window.updateDeviceDataPanel();
     }
     
     // 渲染场景
@@ -991,8 +998,8 @@ function setupDeviceInteraction() {
         const isCZK = deviceId.startsWith('CZK_');
         
         // 检查是否为故障设备（包括GZJ和CZK的故障）
-        let isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) || 
-                        (isCZK && state.czklFaultyDevices[deviceId]) ||
+        const isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) ||
+                        (isCZK && state.czkFaultyDevices[deviceId]) ||
                         state.faultyDevices[deviceId];
         
         let statusText = '停机';
@@ -1006,11 +1013,11 @@ function setupDeviceInteraction() {
             statusText = '运行中';
             statusColor = '#22c55e';
             isRunning = true;
-        } else if (isCZK && state.ckzPhase === '运行中') {
+        } else if (isCZK && state.czkPhase === '运行中') {
             statusText = '运行中';
             statusColor = '#22c55e';
             isRunning = true;
-        } else if ((isGZJ && state.gzjPhase === '暂停') || (isCZK && state.ckzPhase === '暂停')) {
+        } else if ((isGZJ && state.gzjPhase === '暂停') || (isCZK && state.czkPhase === '暂停')) {
             statusText = '待机';
             statusColor = '#f59e0b';
         }
@@ -1068,9 +1075,9 @@ function setupDeviceInteraction() {
         const isCZK = deviceId.startsWith('CZK_');
         
         // 检查设备是否为故障状态（包括全局、GZJ、CZK）
-        const isFaulty = state.faultyDevices[deviceId] || 
-                         (isGZJ && state.gzjFaultyDevices[deviceId]) || 
-                         (isCZK && state.czklFaultyDevices[deviceId]);
+        const isFaulty = state.faultyDevices[deviceId] ||
+                         (isGZJ && state.gzjFaultyDevices[deviceId]) ||
+                         (isCZK && state.czkFaultyDevices[deviceId]);
         
         if (!isFaulty) {
             return; // 设备不是故障状态
@@ -1081,7 +1088,7 @@ function setupDeviceInteraction() {
         if (isGZJ) {
             delete state.gzjFaultyDevices[deviceId];
         } else if (isCZK) {
-            delete state.czklFaultyDevices[deviceId];
+            delete state.czkFaultyDevices[deviceId];
         }
         
         // 2. 在报警记录中添加处理完成记录（确保不重复）
@@ -1128,16 +1135,37 @@ function setupDeviceInteraction() {
         removeLabel();
         
         const deviceId = object.userData.deviceId;
-        const deviceType = getDeviceTypeFromId(deviceId);
+        const isGZJ = deviceId.startsWith('GZJ_');
+        const isCZK = deviceId.startsWith('CZK_');
         
         let statusColor = '#6b7280';
-        if (state.faultyDevices && state.faultyDevices[deviceId]) {
+        let statusText = '停机';
+        
+        // 检查是否为故障设备
+        const isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) ||
+                         (isCZK && state.czkFaultyDevices[deviceId]) ||
+                         state.faultyDevices[deviceId];
+        
+        if (isFaulty) {
             statusColor = '#ef4444';
-        } else if (deviceType === 'vacuumPump' || deviceType === 'perfusionPump' || deviceType === 'valve') {
-            if (state.phase === '灌注' || state.phase === '抽真空') {
+            statusText = '故障';
+        } else if (isGZJ) {
+            // GZJ设备（灌注机）：根据gzjPhase判断
+            if (state.gzjPhase === '运行中') {
                 statusColor = '#22c55e';
-            } else if (state.phase === '暂停') {
+                statusText = '运行中';
+            } else if (state.gzjPhase === '暂停') {
                 statusColor = '#f59e0b';
+                statusText = '待机';
+            }
+        } else if (isCZK) {
+            // CZK设备（抽真空机）：根据czkPhase判断
+            if (state.czkPhase === '运行中') {
+                statusColor = '#22c55e';
+                statusText = '运行中';
+            } else if (state.czkPhase === '暂停') {
+                statusColor = '#f59e0b';
+                statusText = '待机';
             }
         }
         
@@ -1153,8 +1181,8 @@ function setupDeviceInteraction() {
         labelElement.style.fontWeight = '500';
         labelElement.style.zIndex = '1000';
         labelElement.style.pointerEvents = 'none';
-        labelElement.style.border = '1px solid #00d5ff';
-        labelElement.style.boxShadow = '0 0 12px rgba(0, 213, 255, 0.4)';
+        labelElement.style.border = '1px solid ' + statusColor;
+        labelElement.style.boxShadow = '0 0 12px ' + statusColor.replace(')', ', 0.4)').replace('rgb', 'rgba').replace('#', '');
         labelElement.style.transform = 'translate(-50%, -150%)';
         labelElement.style.whiteSpace = 'nowrap';
         labelElement.style.display = 'flex';
@@ -1172,8 +1200,14 @@ function setupDeviceInteraction() {
         const textSpan = document.createElement('span');
         textSpan.textContent = getDeviceDisplayName(deviceId);
         
+        const statusSpan = document.createElement('span');
+        statusSpan.textContent = '[' + statusText + ']';
+        statusSpan.style.color = statusColor;
+        statusSpan.style.marginLeft = '8px';
+        
         labelElement.appendChild(statusDot);
         labelElement.appendChild(textSpan);
+        labelElement.appendChild(statusSpan);
         
         // 计算屏幕坐标
         const canvas = renderer.domElement;
@@ -1237,9 +1271,14 @@ function restoreHoverOriginalMaterials(object) {
 function initDeviceStatusLabels() {
     const container = document.getElementById('canvas-container');
     if (!container) {
+        console.log('initDeviceStatusLabels: canvas-container not found');
         return;
     }
-    
+
+    console.log('initDeviceStatusLabels called');
+    console.log('window.models:', window.models);
+    console.log('Object.keys(window.models):', Object.keys(window.models));
+
     window.deviceStatusContainer = document.createElement('div');
     window.deviceStatusContainer.id = 'device-status-container';
     window.deviceStatusContainer.style.position = 'absolute';
@@ -1251,11 +1290,12 @@ function initDeviceStatusLabels() {
     window.deviceStatusContainer.style.zIndex = '15';
     window.deviceStatusContainer.style.overflow = 'hidden';
     container.appendChild(window.deviceStatusContainer);
-    
-    
+
+
     const deviceModels = window.models;
     const deviceNames = Object.keys(deviceModels);
-    
+    console.log('initDeviceStatusLabels: deviceNames:', deviceNames);
+
     deviceNames.forEach(function(deviceId) {
         createDeviceStatusLabel(deviceId, deviceModels[deviceId]);
     });
@@ -1337,24 +1377,33 @@ function updateDeviceStatusLabels() {
 }
 
 function updateDeviceStatusImages() {
-    if (!window.deviceStatusLabels) return;
-    
+    if (!window.deviceStatusLabels) {
+        console.log('updateDeviceStatusImages: window.deviceStatusLabels is null or undefined');
+        return;
+    }
+
+    console.log('updateDeviceStatusImages called - gzjPhase:', state.gzjPhase, 'czkPhase:', state.czkPhase);
+    console.log('deviceStatusLabels keys:', Object.keys(window.deviceStatusLabels));
+
     Object.keys(window.deviceStatusLabels).forEach(function(deviceId) {
         const labelInfo = window.deviceStatusLabels[deviceId];
-        if (!labelInfo || !labelInfo.img) return;
-        
+        if (!labelInfo || !labelInfo.img) {
+            console.log('updateDeviceStatusImages: labelInfo or img is null for', deviceId);
+            return;
+        }
+
         let statusImage = './assets/images/stop.png';
         let statusColor = '#6b7280';
-        
+
         // 判断设备类型
         const isGZJ = deviceId.startsWith('GZJ_');
         const isCZK = deviceId.startsWith('CZK_');
-        
+
         // 检查是否为故障设备
-        const isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) || 
-                         (isCZK && state.czklFaultyDevices[deviceId]) ||
+        const isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) ||
+                         (isCZK && state.czkFaultyDevices[deviceId]) ||
                          state.faultyDevices[deviceId];
-        
+
         if (isFaulty) {
             statusImage = './assets/images/error.png';
             statusColor = '#ef4444';
@@ -1368,19 +1417,18 @@ function updateDeviceStatusImages() {
                 statusColor = '#f59e0b';
             }
         } else if (isCZK) {
-            // CZK设备（抽真空机）：根据ckzPhase判断
-            if (state.ckzPhase === '运行中') {
+            // CZK设备（抽真空机）：根据czkPhase判断
+            if (state.czkPhase === '运行中') {
                 statusImage = './assets/images/run.png';
                 statusColor = '#22c55e';
-            } else if (state.ckzPhase === '暂停') {
+            } else if (state.czkPhase === '暂停') {
                 statusImage = './assets/images/standby.png';
                 statusColor = '#f59e0b';
             }
         }
-        
-        if (labelInfo.img.src !== window.location.origin + '/' + statusImage.replace('./', '')) {
-            labelInfo.img.src = statusImage;
-        }
+
+        console.log('updateDeviceStatusImages:', deviceId, 'isGZJ:', isGZJ, 'isCZK:', isCZK, 'isFaulty:', isFaulty, 'setting src to:', statusImage);
+        labelInfo.img.src = statusImage;
     });
 }
 
@@ -1470,8 +1518,8 @@ function updateDeviceStatusStatistics() {
         const isCZK = deviceId.startsWith('CZK_');
         
         // 检查是否为故障设备（包括GZJ和CZK的故障）
-        const isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) || 
-                         (isCZK && state.czklFaultyDevices[deviceId]) ||
+        const isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) ||
+                         (isCZK && state.czkFaultyDevices[deviceId]) ||
                          state.faultyDevices[deviceId];
         
         if (isFaulty) {
@@ -1486,10 +1534,10 @@ function updateDeviceStatusStatistics() {
                 stoppedCount++;
             }
         } else if (isCZK) {
-            // CZK设备：根据ckzPhase判断
-            if (state.ckzPhase === '运行中') {
+            // CZK设备：根据czkPhase判断
+            if (state.czkPhase === '运行中') {
                 normalCount++;
-            } else if (state.ckzPhase === '暂停') {
+            } else if (state.czkPhase === '暂停') {
                 pausedCount++;
             } else {
                 stoppedCount++;
@@ -1508,6 +1556,11 @@ function updateDeviceStatusStatistics() {
 }
 
 function updateProcessParams() {
+    // 系统未运行时，不更新实时数据（保持静止状态）
+    if (!state.isRunning) {
+        return;
+    }
+
     // 模拟工艺参数更新
     if (state.vacuumPump) {
         state.vacuum = Math.min(state.vacuum + 0.1, 100);
@@ -1556,10 +1609,10 @@ function updateProcessParams() {
 
 function updateProcessProgress() {
     // 更新抽真空工序进度（平滑填充动画）
-    if (state.ckzPhase === '运行中') {
+    if (state.czkPhase === '运行中') {
         // 每帧增加1.8%，约5.5秒从0%到100%（平滑动画）
         state.vacuumProgress = Math.min(state.vacuumProgress + 1.8, 100);
-    } else if (state.ckzPhase === '暂停') {
+    } else if (state.czkPhase === '暂停') {
         // 暂停时保持当前进度（不归零）
         state.vacuumProgress = Math.min(state.vacuumProgress, 100);
     } else {
@@ -1607,61 +1660,92 @@ function updateProcessProgress() {
 }
 
 function updateProcessStatistics() {
-    // 计算工艺稳定性（基于设备状态、参数波动等）
-    let stabilityBase = 98.5;
-    
-    // 如果有故障设备，降低稳定性
-    const faultyCount = Object.keys(state.faultyDevices).length;
-    if (faultyCount > 0) {
-        stabilityBase -= faultyCount * 2; // 每个故障设备降低2%
+    // 系统未运行时，不更新工艺统计数据（保持静止状态）
+    if (!state.isRunning) {
+        return;
     }
-    
+
+    // 工序进度都达到100%后，数据稳定不再跳动
+    if (state.vacuumProgress >= 99.9 && state.perfusionProgress >= 99.9) {
+        return;
+    }
+
+    // 获取所有设备
+    const deviceNames = Object.keys(window.models || {});
+    const totalDevices = deviceNames.length;
+
+    if (totalDevices === 0) return;
+
+    // 统计正常运行设备数量
+    let normalCount = 0;
+    let faultyCount = 0;
+
+    deviceNames.forEach(function(deviceId) {
+        const isGZJ = deviceId.startsWith('GZJ_');
+        const isCZK = deviceId.startsWith('CZK_');
+
+        // 检查是否为故障设备
+        const isFaulty = (isGZJ && state.gzjFaultyDevices[deviceId]) ||
+                         (isCZK && state.czkFaultyDevices[deviceId]) ||
+                         state.faultyDevices[deviceId];
+
+        if (isFaulty) {
+            faultyCount++;
+        } else if ((isGZJ && state.gzjPhase === '运行中') || (isCZK && state.czkPhase === '运行中')) {
+            normalCount++;
+        }
+    });
+
+    // 计算正常运行率（基于正常运行设备数量）
+    const normalRate = totalDevices > 0 ? (normalCount / totalDevices) * 100 : 0;
+
+    // 计算工艺稳定性（基于设备正常运行率）
+    let stabilityBase = 85 + normalRate * 0.15; // 基础85% + 正常率贡献
+
     // 根据温度波动调整稳定性
     const tempVariation = Math.abs(state.temperature - 25);
     stabilityBase -= tempVariation * 0.1;
-    
-    // 添加随机波动（±0.5%）
-    stabilityBase += (Math.random() - 0.5) * 1;
-    
+
+    // 添加微小随机波动（±0.3%）
+    stabilityBase += (Math.random() - 0.5) * 0.6;
+
     // 限制范围
-    state.stability = Math.max(85, Math.min(99.9, stabilityBase));
-    
-    // 计算成功率（基于稳定性和历史表现）
-    let successRateBase = 96.2;
-    
-    // 成功率与稳定性相关
-    successRateBase = state.stability - 2 + (Math.random() - 0.5) * 0.5;
-    
-    // 如果有故障，降低成功率
+    state.stability = Math.max(80, Math.min(99.9, stabilityBase));
+
+    // 计算成功率（基于稳定性和正常运行率）
+    let successRateBase = state.stability * 0.98 + normalRate * 0.02;
+
+    // 如果有故障，额外降低成功率
     if (faultyCount > 0) {
-        successRateBase -= faultyCount * 1.5; // 每个故障降低1.5%
+        successRateBase -= faultyCount * 1.2;
     }
-    
+
+    // 添加微小随机波动（±0.2%）
+    successRateBase += (Math.random() - 0.5) * 0.4;
+
     // 限制范围
-    state.successRate = Math.max(80, Math.min(99.9, successRateBase));
-    
+    state.successRate = Math.max(75, Math.min(99.9, successRateBase));
+
     // 更新显示
     const stabilityEl = document.getElementById('stabilityValue');
     const successRateEl = document.getElementById('successRateValue');
-    
+
     if (stabilityEl) {
         stabilityEl.textContent = `${state.stability.toFixed(1)}%`;
-        // 根据数值调整颜色
         if (state.stability >= 95) {
-            stabilityEl.style.color = '#4ade80'; // 绿色
+            stabilityEl.style.color = '#4ade80';
             stabilityEl.style.textShadow = '0 0 10px rgba(74, 222, 128, 0.5)';
         } else if (state.stability >= 90) {
-            stabilityEl.style.color = '#fbbf24'; // 黄色
+            stabilityEl.style.color = '#fbbf24';
             stabilityEl.style.textShadow = '0 0 10px rgba(251, 191, 36, 0.5)';
         } else {
-            stabilityEl.style.color = '#ef4444'; // 红色
+            stabilityEl.style.color = '#ef4444';
             stabilityEl.style.textShadow = '0 0 10px rgba(239, 68, 68, 0.5)';
         }
     }
-    
+
     if (successRateEl) {
         successRateEl.textContent = `${state.successRate.toFixed(1)}%`;
-        // 根据数值调整颜色
         if (state.successRate >= 95) {
             successRateEl.style.color = '#4ade80';
             successRateEl.style.textShadow = '0 0 10px rgba(74, 222, 128, 0.5)';
@@ -1707,32 +1791,41 @@ function updateAlarms() {
 
 function updateAlarmDisplay() {
     const alarmLog = document.getElementById('alarmLog');
-    alarmLog.innerHTML = '';
-    
-    state.alarms.forEach(alarm => {
-        const alarmEntry = document.createElement('div');
-        alarmEntry.className = `alarm-entry ${alarm.type}`;
-        alarmEntry.innerHTML = `
-            <div class="alarm-time">${alarm.time}</div>
-            <div class="alarm-desc">${alarm.message}</div>
-        `;
-        alarmLog.appendChild(alarmEntry);
-    });
+    if (alarmLog) {
+        alarmLog.innerHTML = '';
+        
+        state.alarms.forEach(alarm => {
+            const alarmEntry = document.createElement('div');
+            alarmEntry.className = `alarm-entry ${alarm.type}`;
+            alarmEntry.innerHTML = `
+                <div class="alarm-time">${alarm.time}</div>
+                <div class="alarm-desc">${alarm.message}</div>
+            `;
+            alarmLog.appendChild(alarmEntry);
+        });
+    }
     
     // 更新报警计数
-    document.getElementById('alarmCount').textContent = state.alarmCount;
+    const alarmCountElement = document.getElementById('alarmCount');
+    if (alarmCountElement) {
+        alarmCountElement.textContent = state.alarmCount;
+    }
 }
 
 function updateDeviceCount() {
-    const czkCount = Object.keys(models).filter(key => key.startsWith('CZK_')).length;
-    const gzjCount = Object.keys(models).filter(key => key.startsWith('GZJ_')).length;
+    const czkCount = Object.keys(window.models).filter(key => key.startsWith('CZK_')).length;
+    const gzjCount = Object.keys(window.models).filter(key => key.startsWith('GZJ_')).length;
     const totalCount = czkCount + gzjCount;
     const totalModels = 28; // 总模型数量
     const progress = Math.round((totalCount / totalModels) * 100);
     
-    document.getElementById('czkCount').textContent = czkCount;
-    document.getElementById('gzjCount').textContent = gzjCount;
-    document.getElementById('equipmentTotal').textContent = totalCount;
+    const czkCountElement = document.getElementById('czkCount');
+    const gzjCountElement = document.getElementById('gzjCount');
+    const equipmentTotalElement = document.getElementById('equipmentTotal');
+    
+    if (czkCountElement) czkCountElement.textContent = czkCount;
+    if (gzjCountElement) gzjCountElement.textContent = gzjCount;
+    if (equipmentTotalElement) equipmentTotalElement.textContent = totalCount;
     
     // 在页面上显示加载状态
     const statusElement = document.getElementById('modelLoading');
@@ -1769,7 +1862,7 @@ function tickClock() {
 function testRandomFault() {
     // 开始抽真空灌注（控制所有设备：GZJ_1-4 + CZK_1-24）
     state.gzjPhase = '运行中';
-    state.ckzPhase = '运行中';
+    state.czkPhase = '运行中';
     state.perfusionPump = true;
     state.vacuumPump = true;
     
@@ -1796,14 +1889,14 @@ function testRandomFault() {
     
     // 重置所有设备为正常，然后设置故障设备
     state.gzjFaultyDevices = {};
-    state.czklFaultyDevices = {};
+    state.czkFaultyDevices = {};
     state.faultyDevices = {};
-    
+
     allFaultyDevices.forEach(function(deviceId) {
         if (deviceId.startsWith('GZJ_')) {
             state.gzjFaultyDevices[deviceId] = true;
         } else if (deviceId.startsWith('CZK_')) {
-            state.czklFaultyDevices[deviceId] = true;
+            state.czkFaultyDevices[deviceId] = true;
         }
         state.faultyDevices[deviceId] = true; // 同时更新全局faultyDevices
     });
@@ -1839,12 +1932,83 @@ function testRandomFault() {
     }
 }
 
+function startPerfuse() {
+    // 开始抽真空灌注（控制所有设备：GZJ_1-4 + CZK_1-24）
+    state.gzjPhase = '运行中';
+    state.czkPhase = '运行中';
+    state.perfusionPump = true;
+    state.vacuumPump = true;
+    state.isRunning = true;
+
+    console.log('startPerfuse called - gzjPhase:', state.gzjPhase, 'czkPhase:', state.czkPhase);
+    console.log('window.deviceStatusLabels exists:', !!window.deviceStatusLabels);
+    if (window.deviceStatusLabels) {
+        console.log('deviceStatusLabels count:', Object.keys(window.deviceStatusLabels).length);
+    }
+
+    // 获取所有设备（GZJ + CZK）
+    const allDevices = Object.keys(window.models);
+
+    // 随机选择1-3台设备设为故障
+    const faultCount = Math.floor(Math.random() * 3) + 1; // 1-3台
+    const shuffled = allDevices.sort(() => 0.5 - Math.random());
+    const faultyDevices = shuffled.slice(0, Math.min(faultCount, allDevices.length));
+
+    // 重置所有设备为正常，然后设置故障设备
+    state.gzjFaultyDevices = {};
+    state.czkFaultyDevices = {};
+    state.faultyDevices = {};
+
+    faultyDevices.forEach(function(deviceId) {
+        if (deviceId.startsWith('GZJ_')) {
+            state.gzjFaultyDevices[deviceId] = true;
+        } else if (deviceId.startsWith('CZK_')) {
+            state.czkFaultyDevices[deviceId] = true;
+        }
+        state.faultyDevices[deviceId] = true;
+    });
+
+    // 添加故障报警（确保不重复）
+    faultyDevices.forEach(function(deviceId) {
+        const existingAlarm = state.alarms.find(alarm =>
+            alarm.type === 'error' && alarm.message.includes(deviceId)
+        );
+
+        if (!existingAlarm) {
+            const alarm = {
+                type: 'error',
+                message: `${getDeviceDisplayName(deviceId)} 故障`,
+                time: new Date().toLocaleTimeString()
+            };
+            state.alarms.unshift(alarm);
+            state.alarmCount++;
+        }
+    });
+
+    // 限制报警数量
+    if (state.alarms.length > 10) {
+        state.alarms.pop();
+    }
+
+    // 播放模型动画
+    playModelAnimation();
+
+    // 更新显示
+    updateAlarmDisplay();
+    updateDeviceStatus();
+    updateProcessParams();
+    if (window.updateDeviceDataPanel) {
+        window.updateDeviceDataPanel();
+    }
+}
+
 function pausePerfuse() {
     // 暂停抽真空灌注（暂停所有设备：GZJ_1-4 + CZK_1-24）
     state.gzjPhase = '暂停';
-    state.ckzPhase = '暂停';
+    state.czkPhase = '暂停';
     state.perfusionPump = false;
     state.vacuumPump = false;
+    state.isRunning = false;
     
     // 暂停模型动画
     pauseModelAnimation();
@@ -1875,7 +2039,7 @@ function stopPerfuse() {
 
 function startVacuum() {
     // 开始抽真空（只控制CZK_1-24）
-    state.ckzPhase = '运行中';
+    state.czkPhase = '运行中';
     state.vacuumPump = true;
     
     // 获取所有CZK设备（抽真空机1-24）
@@ -1887,9 +2051,9 @@ function startVacuum() {
     const faultyDevices = shuffled.slice(0, faultCount);
     
     // 重置CZK设备为正常，然后设置故障设备
-    state.czklFaultyDevices = {};
+    state.czkFaultyDevices = {};
     faultyDevices.forEach(function(deviceId) {
-        state.czklFaultyDevices[deviceId] = true;
+        state.czkFaultyDevices[deviceId] = true;
         state.faultyDevices[deviceId] = true; // 同时更新全局faultyDevices
     });
     
@@ -1926,7 +2090,7 @@ function startVacuum() {
 
 function pauseVacuum() {
     // 暂停抽真空（只控制CZK_1-24）
-    state.ckzPhase = '暂停';
+    state.czkPhase = '暂停';
     state.vacuumPump = false;
     updateDeviceStatus();
     updateProcessParams();
@@ -1956,8 +2120,8 @@ function reset() {
     state.gzjFaultyDevices = {};
     
     // 重置CZK设备状态
-    state.ckzPhase = '停机';
-    state.czklFaultyDevices = {};
+    state.czkPhase = '停机';
+    state.czkFaultyDevices = {};
     
     // 复位模型动画
     resetModelAnimation();
@@ -1967,6 +2131,7 @@ function reset() {
     state.perfusionProgress = 0;
     state.stability = 98.5;
     state.successRate = 96.2;
+    state.isRunning = false;
     
     // 立即更新进度条显示为0%
     const vacuumProgressBar = document.getElementById('vacuumProgressBar');
